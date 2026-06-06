@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import TheWelcome from '../components/TheWelcome.vue'
+import { check } from '@/api/healthController.ts'
+
+check().then((res) => {
+  console.log(res)
+})
+
 </script>
 
 <template>
   <main>
-    <TheWelcome />
   </main>
 </template>
