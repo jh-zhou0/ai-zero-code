@@ -82,8 +82,10 @@ async function handleLogin() {
     // 登录成功后重定向到之前的页面或首页
     const redirect = (route.query.redirect as string) || '/'
     await router.push(redirect)
-  } catch (e: any) {
-    message.error(e.message || '登录失败')
+  } catch (e: unknown) {
+    // 使用类型守卫安全地判断 e 是否为 Error 对象
+    const errorMessage = e instanceof Error ? e.message : '登录失败'
+    message.error(errorMessage)
   } finally {
     loading.value = false
   }

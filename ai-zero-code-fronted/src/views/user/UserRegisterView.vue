@@ -103,8 +103,10 @@ async function handleRegister() {
     await userStore.doRegister(formState)
     message.success('注册成功')
     await router.push('/user/login')
-  } catch (e: any) {
-    message.error(e.message || '注册失败')
+  } catch (e: unknown) {
+    // 使用类型守卫安全地判断 e 是否为 Error 对象
+    const errorMessage = e instanceof Error ? e.message : '注册失败'
+    message.error(errorMessage)
   } finally {
     loading.value = false
   }
