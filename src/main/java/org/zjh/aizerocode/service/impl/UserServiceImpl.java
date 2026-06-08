@@ -49,7 +49,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         // 2. 检查是否重复
         QueryWrapper queryWrapper = new QueryWrapper();
-        queryWrapper.eq("user_account", userAccount);
+        queryWrapper.eq(User::getUserAccount, userAccount);
         long count = this.mapper.selectCountByQuery(queryWrapper);
         if (count > 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
@@ -85,8 +85,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String encryptPassword = getEncryptPassword(userPassword);
         // 查询用户是否存在
         QueryWrapper queryWrapper = new QueryWrapper();
-        queryWrapper.eq("user_account", userAccount);
-        queryWrapper.eq("user_password", encryptPassword);
+        queryWrapper.eq(User::getUserAccount, userAccount);
+        queryWrapper.eq(User::getUserPassword, encryptPassword);
         User user = this.mapper.selectOneByQuery(queryWrapper);
         // 用户不存在
         if (user == null) {
@@ -174,15 +174,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String userName = userQueryRequest.getUserName();
         String userProfile = userQueryRequest.getUserProfile();
         String userRole = userQueryRequest.getUserRole();
-        String sortField = userQueryRequest.getSortField();
+        String sortField = StrUtil.isNotBlank(userQueryRequest.getSortField()) ? userQueryRequest.getSortField() : "id";
         String sortOrder = userQueryRequest.getSortOrder();
         return QueryWrapper.create()
-                .eq("id", id) // where id = ${id}
-                .eq("user_role", userRole) // and userRole = ${userRole}
-                .like("user_account", userAccount)
-                .like("user_name", userName)
-                .like("user_profile", userProfile)
-                .orderBy(sortField, "ascend".equals(sortOrder));
+                .eq(UserQueryRequest::getId, id) // where id = ${id}
+                .eq(UserQueryRequest::getUserRole, userRole) // and userRole = ${userRole}
+                .like(UserQueryRequest::getUserAccount, userAccount)
+                .like(UserQueryRequest::getUserName, userName)
+                .like(UserQueryRequest::getUserProfile, userProfile)
+                .orderBy(StrUtil.toUnderlineCase(sortField), "ascend".equals(sortOrder));
     }
 
 }
