@@ -1,6 +1,8 @@
 spring:
   application:
     name: ai-zero-code
+  profiles:
+    active: local
   datasource:
     url: jdbc:mysql://localhost:3306/ai_zero_code
     username: root
