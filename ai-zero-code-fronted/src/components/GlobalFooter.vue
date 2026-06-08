@@ -11,8 +11,7 @@ const year = new Date().getFullYear()
 <style scoped>
 .global-footer {
   text-align: center;
-  background: #f0f2f5;
-  color: rgba(0, 0, 0, 0.45);
+  background: linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 50%, #f1f8e9 100%);
   font-size: 14px;
   padding: 24px 50px;
 }

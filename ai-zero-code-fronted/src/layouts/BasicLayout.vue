@@ -23,7 +23,7 @@ import GlobalFooter from '@/components/GlobalFooter.vue'
 .basic-content {
   flex: 1;
   padding: 24px;
-  background: #f5f5f5;
+  background: linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 50%, #f1f8e9 100%);
 }
 
 @media (max-width: 768px) {
