@@ -6,6 +6,8 @@ import org.zjh.aizerocode.ai.model.HtmlCodeResult;
 import org.zjh.aizerocode.exception.BusinessException;
 import org.zjh.aizerocode.exception.ErrorCode;
 
+import static org.zjh.aizerocode.constant.AppConstant.HTML_FILE_NAME;
+
 /**
  * HTML代码文件保存器
  *

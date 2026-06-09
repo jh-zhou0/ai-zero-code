@@ -6,6 +6,8 @@ import org.zjh.aizerocode.ai.model.MultiFileCodeResult;
 import org.zjh.aizerocode.exception.BusinessException;
 import org.zjh.aizerocode.exception.ErrorCode;
 
+import static org.zjh.aizerocode.constant.AppConstant.*;
+
 /**
  * 多文件代码文件保存器
  *

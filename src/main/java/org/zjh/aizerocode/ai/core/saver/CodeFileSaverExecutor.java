@@ -20,10 +20,10 @@ public class CodeFileSaverExecutor {
 
     private static final CodeFileSaverTemplate<MultiFileCodeResult> multiFileCodeFileSaver = new MultiFileCodeFileSaver();
 
-    public static File saveCode(Object result, CodeGenTypeEnum codeGenTypeEnum) {
+    public static File saveCode(Object result, CodeGenTypeEnum codeGenTypeEnum, Long appId) {
         return switch (codeGenTypeEnum) {
-            case HTML -> htmlCodeFileSaver.saveCode((HtmlCodeResult) result);
-            case MULTI_FILE -> multiFileCodeFileSaver.saveCode((MultiFileCodeResult) result);
+            case HTML -> htmlCodeFileSaver.saveCode((HtmlCodeResult) result, appId);
+            case MULTI_FILE -> multiFileCodeFileSaver.saveCode((MultiFileCodeResult) result, appId);
             default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成类型");
         };
     }

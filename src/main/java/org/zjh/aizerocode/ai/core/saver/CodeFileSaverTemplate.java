@@ -1,14 +1,16 @@
 package org.zjh.aizerocode.ai.core.saver;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import org.zjh.aizerocode.ai.enums.CodeGenTypeEnum;
 import org.zjh.aizerocode.exception.BusinessException;
 import org.zjh.aizerocode.exception.ErrorCode;
+import org.zjh.aizerocode.exception.ThrowUtils;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+
+import static org.zjh.aizerocode.constant.AppConstant.FILE_SAVE_ROOT_DIR;
 
 /**
  * 抽象文件保存模板类
@@ -19,36 +21,17 @@ import java.nio.charset.StandardCharsets;
 public abstract class CodeFileSaverTemplate<T> {
 
     /**
-     * HTML文件名
-     */
-    public static final String HTML_FILE_NAME = "index.html";
-
-    /**
-     * CSS文件名
-     */
-    public static final String CSS_FILE_NAME = "style.css";
-
-    /**
-     * JS文件名
-     */
-    public static final String JS_FILE_NAME = "script.js";
-
-    /**
-     * 文件保存的根目录
-     */
-    private static final String FILE_SAVE_ROOT_DIR = System.getProperty("user.dir") + "/tmp/code_output";
-
-    /**
      * 模板方法：保存代码的标准流程
      *
      * @param result 代码结果对象
+     * @param appId  应用Id
      * @return 保存的目录
      */
-    public final File saveCode(T result) {
+    public final File saveCode(T result, Long appId) {
         // 1. 验证输入
         validateInput(result);
         // 2. 构建唯一目录
-        String baseDirPath = buildUniqueDir();
+        String baseDirPath = buildUniqueDir(appId);
         // 3. 保存文件（具体实现交给子类）
         saveFiles(result, baseDirPath);
         // 4. 返回文件目录对象
@@ -81,13 +64,14 @@ public abstract class CodeFileSaverTemplate<T> {
     }
 
     /**
-     * 构建文件的唯一路径：tmp/code_output/bizType_雪花 ID
+     * 构建文件的唯一路径：tmp/code_output/bizType_appId
      *
      * @return 目录路径
      */
-    protected String buildUniqueDir() {
+    protected String buildUniqueDir(Long appId) {
+        ThrowUtils.throwIf(appId == null, ErrorCode.PARAMS_ERROR, "应用Id不能为空");
         String codeType = getCodeType().getValue();
-        String uniqueDirName = StrUtil.format("{}_{}", codeType, IdUtil.getSnowflakeNextIdStr());
+        String uniqueDirName = StrUtil.format("{}_{}", codeType, appId);
         String dirPath = FILE_SAVE_ROOT_DIR + File.separator + uniqueDirName;
         FileUtil.mkdir(dirPath);
         return dirPath;
