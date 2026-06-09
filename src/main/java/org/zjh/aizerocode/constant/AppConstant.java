@@ -36,4 +36,9 @@ public interface AppConstant {
      * 文件部署的根目录
      */
     String FILE_DEPLOY_ROOT_DIR = System.getProperty("user.dir") + "/tmp/code_deploy";
+
+    /**
+     * 应用部署域名
+     */
+    String APP_DEPLOY_DOMAIN = "http://localhost:8080";
 }
