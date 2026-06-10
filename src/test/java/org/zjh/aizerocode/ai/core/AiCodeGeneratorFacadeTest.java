@@ -28,7 +28,7 @@ class AiCodeGeneratorFacadeTest {
 
     @Test
     void generateCodeAndSaveStream() {
-        Flux<String> codeStream = aiCodeGeneratorFacade.generateCodeAndSaveStream("生成登录页面，20行内", CodeGenTypeEnum.MULTI_FILE, 1L);
+        Flux<String> codeStream = aiCodeGeneratorFacade.generateCodeAndSaveStream("生成代办事项页面，主题为浅粉色", CodeGenTypeEnum.MULTI_FILE, 1L);
         List<String> result = codeStream.collectList().block();
         Assertions.assertNotNull(result);
     }

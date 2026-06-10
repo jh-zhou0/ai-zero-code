@@ -7,6 +7,7 @@ import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
@@ -38,6 +39,7 @@ import java.util.Map;
  *
  * @author Kayson
  */
+@Slf4j
 @RestController
 @RequestMapping("/app")
 public class AppController {
@@ -65,8 +67,12 @@ public class AppController {
         ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
         // 获取当前登录用户
         User loginUser = userService.getLoginUser(request);
+        
+        log.info("开始生成代码，appId: {}, message: {}", appId, message);
+        
         // 调用服务生成代码（流式）
         Flux<String> contentFlux = appService.chatToGenCode(appId, message, loginUser);
+
         return contentFlux
                 .map(chunk -> {
                     // 把每个代码片段，包装成 SSE 标准格式
@@ -81,7 +87,18 @@ public class AppController {
                         ServerSentEvent.<String>builder()
                                 .event("done")
                                 .build()
-                ));
+                ))
+                .doOnComplete(() -> log.info("代码生成完成，appId: {}", appId))
+                .onErrorResume(error -> {
+                    // 错误处理：返回错误信息
+                    log.error("代码生成失败，appId: {}, error: {}", appId, error.getMessage(), error);
+                    Map<String, String> errorMap = Map.of("error", error.getMessage());
+                    String errorJson = JSONUtil.toJsonStr(errorMap);
+                    return Mono.just(ServerSentEvent.<String>builder()
+                            .event("error")
+                            .data(errorJson)
+                            .build());
+                });
     }
 
     /**
