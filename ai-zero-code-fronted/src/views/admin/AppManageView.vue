@@ -86,6 +86,8 @@
           </template>
           <template v-if="column.key === 'action'">
             <a-space>
+              <a-button type="link" @click="handleViewChat(record)">查看会话</a-button>
+              <a-button type="link" @click="handlePreview(record)">预览</a-button>
               <a-button type="link" @click="handleEdit(record)">编辑</a-button>
               <a-button type="link" @click="handleFeature(record)">精选</a-button>
               <a-button type="link" danger @click="handleDelete(record)">删除</a-button>
@@ -131,6 +133,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import {
   listAppVoByPageByAdmin,
@@ -139,6 +142,8 @@ import {
 } from '@/api/appController'
 import { CodeGenTypeEnum, getCodeGenTypeLabel } from '@/constants/codeGenType'
 import type { TablePaginationConfig, SelectProps } from 'ant-design-vue'
+
+const router = useRouter()
 
 /** 生成类型下拉选项，value 是枚举值，label 是中文描述 */
 const codeGenTypeOptions: SelectProps['options'] = Object.values(CodeGenTypeEnum).map((item) => ({
@@ -176,7 +181,7 @@ const columns = [
   { title: '优先级', key: 'priority', width: 80 },
   { title: '创建用户', key: 'userName', width: 120 },
   { title: '创建时间', key: 'createTime', width: 160 },
-  { title: '操作', key: 'action', width: 200, fixed: 'right' },
+  { title: '操作', key: 'action', width: 320, fixed: 'right' },
 ]
 
 // ====== 弹窗相关 ======
@@ -333,6 +338,34 @@ function handleDelete(record: API.AppVO) {
       }
     },
   })
+}
+
+/**
+ * 查看会话：跳转到应用的聊天页面
+ */
+function handleViewChat(record: API.AppVO) {
+  if (!record.id) return
+  router.push(`/app/chat/${record.id}`)
+}
+
+/**
+ * 预览应用：在新窗口打开预览页面
+ */
+function handlePreview(record: API.AppVO) {
+  let url = ''
+  // 优先使用已部署的地址
+  if (record.deployKey) {
+    url = `http://localhost:8080/${record.deployKey}/`
+  } else if (record.codeGenType && record.id) {
+    // 已生成但未部署，使用静态资源地址
+    url = `http://localhost:8123/api/static/${record.codeGenType}_${record.id}/`
+  }
+  
+  if (url) {
+    window.open(url, '_blank')
+  } else {
+    message.warning('该应用尚未生成代码，无法预览')
+  }
 }
 
 onMounted(() => {
