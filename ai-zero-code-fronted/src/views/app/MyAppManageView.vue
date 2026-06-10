@@ -11,11 +11,12 @@
           />
         </a-form-item>
         <a-form-item label="生成类型">
-          <a-input
+          <a-select
             v-model:value="searchParams.codeGenType"
             placeholder="生成类型"
             allow-clear
-            style="width: 120px"
+            style="width: 160px"
+            :options="codeGenTypeOptions"
           />
         </a-form-item>
         <a-form-item>
@@ -49,7 +50,7 @@
             </a-avatar>
           </template>
           <template v-if="column.key === 'codeGenType'">
-            <a-tag v-if="record.codeGenType" color="blue">{{ record.codeGenType }}</a-tag>
+            <a-tag v-if="record.codeGenType" color="blue">{{ getCodeGenTypeLabel(record.codeGenType) }}</a-tag>
             <span v-else class="no-data">-</span>
           </template>
           <template v-if="column.key === 'deployKey'">
@@ -97,7 +98,14 @@ import { ref, onMounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { listMyAppVoByPage, deleteApp, updateApp } from '@/api/appController'
-import type { TablePaginationConfig } from 'ant-design-vue'
+import { CodeGenTypeEnum, getCodeGenTypeLabel } from '@/constants/codeGenType'
+import type { TablePaginationConfig, SelectProps } from 'ant-design-vue'
+
+/** 生成类型下拉选项 */
+const codeGenTypeOptions: SelectProps['options'] = Object.values(CodeGenTypeEnum).map((item) => ({
+  value: item.value,
+  label: item.label,
+}))
 
 const router = useRouter()
 

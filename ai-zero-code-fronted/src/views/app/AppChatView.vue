@@ -57,18 +57,13 @@
               </a-avatar>
             </div>
             <div class="message-content">
-              <div class="message-bubble" v-html="renderedMsg(msg.content)"></div>
-            </div>
-          </div>
-          <div v-if="aiThinking" class="message-item message-ai">
-            <div class="message-avatar">
-              <a-avatar :size="36" style="backgroundColor: #52c41a;">AI</a-avatar>
-            </div>
-            <div class="message-content">
-              <div class="message-bubble thinking-dots">
-                <a-spin size="small" />
-                <span>AI 正在生成代码...</span>
+              <!-- AI 思考中：显示波纹动画，思考完成后直接在同一气泡输出内容 -->
+              <div v-if="msg.role === 'ai' && !msg.content && isLastMsg(index)" class="message-bubble thinking-dots">
+                <span class="thinking-dot">.</span>
+                <span class="thinking-dot">.</span>
+                <span class="thinking-dot">.</span>
               </div>
+              <div v-else class="message-bubble" :class="msg.role === 'ai' ? 'markdown-body' : ''" v-html="msg.role === 'ai' ? renderedMsg(msg.content) : msg.content"></div>
             </div>
           </div>
         </div>
@@ -157,6 +152,9 @@ import { ArrowLeftOutlined, CloudUploadOutlined, EditOutlined } from '@ant-desig
 import { useUserStore } from '@/stores/user'
 import { getAppVoById, deployApp } from '@/api/appController'
 import AppPreview from '@/components/AppPreview.vue'
+import MarkdownIt from 'markdown-it'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github.css'
 
 const route = useRoute()
 const router = useRouter()
@@ -180,15 +178,51 @@ const hasInitPrompt = ref(false)
 const deployKey = ref('')
 /** 标记 SSE 流式调用是否已完成，即代码是否真正生成完毕 */
 const hasGeneratedCode = ref(false)
+/** 标记 SSE 会话是否已结束（收到 done 或 error 后设为 true），避免重复处理 */
+const sseFinished = ref(false)
 
 // 部署
 const deploying = ref(false)
 
 /**
- * 渲染消息内容，将换行转为 <br>
+ * Markdown 渲染器配置：
+ * - 启用 HTML 标签
+ * - 启用链接自动识别
+ * - 启用 typographer 替代（智能引号等）
+ * - 使用 highlight.js 进行代码高亮
+ */
+const md = new MarkdownIt({
+  html: true,
+  linkify: true,
+  typographer: true,
+  highlight: function (str: string, lang: string) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        const highlighted = hljs.highlight(str, { language: lang, ignoreIllegals: true }).value
+        return `<pre class="hljs"><code>${highlighted}</code></pre>`
+      } catch {
+        // fallback
+      }
+    }
+    // 无语言或高亮失败时，转义 HTML 后原样输出
+    const escaped = md.utils.escapeHtml(str)
+    return `<pre class="hljs"><code>${escaped}</code></pre>`
+  }
+})
+
+/**
+ * 判断是否为最新一条消息（用于思考中动画的显示判定）
+ */
+function isLastMsg(index: number) {
+  return index === messages.value.length - 1
+}
+
+/**
+ * 渲染消息内容：使用 markdown-it 将 Markdown 文本渲染为 HTML
  */
 function renderedMsg(content: string) {
-  return content.replace(/\n/g, '<br/>')
+  if (!content) return ''
+  return md.render(content)
 }
 
 /**
@@ -223,6 +257,7 @@ function sendMessage(messageText: string) {
   messages.value.push({ role: 'user', content: messageText })
   userInput.value = ''
   aiThinking.value = true
+  sseFinished.value = false
 
   // 创建一个 AI 消息占位
   messages.value.push({ role: 'ai', content: '' })
@@ -235,6 +270,7 @@ function sendMessage(messageText: string) {
 
   // 处理普通消息事件 - 后端每个 chunk 包装为 { "d": "chunk内容" } 格式
   eventSource.onmessage = (event) => {
+    if (sseFinished.value) return
     const data = event.data
     // 拼接内容
     const lastMsgIndex = messages.value.length - 1
@@ -257,6 +293,8 @@ function sendMessage(messageText: string) {
 
   // 处理 done 事件 - 后端通过 .event("done") 发送
   eventSource.addEventListener('done', async () => {
+    if (sseFinished.value) return
+    sseFinished.value = true
     eventSource.close()
     // 刷新应用信息（获取 deployKey 等）
     await loadAppInfo()
@@ -268,11 +306,11 @@ function sendMessage(messageText: string) {
   })
 
   eventSource.onerror = async () => {
+    if (sseFinished.value) return
+    sseFinished.value = true
     eventSource.close()
     if (aiThinking.value) {
-      // 刷新应用信息
-      await loadAppInfo()
-      hasGeneratedCode.value = true
+      // 由于 EventSource 在 done 后也会触发 onerror，此时 sseFinished 已为 true 不会重复进入
       // 如果内容为空，移除占位
       const lastMsgIndex = messages.value.length - 1
       const lastMsg = messages.value[lastMsgIndex]
@@ -438,7 +476,8 @@ onMounted(async () => {
   font-size: 14px;
   line-height: 1.6;
   word-break: break-word;
-  white-space: pre-wrap;
+  /* 需要 white-space 为 normal 以便 markdown-it 渲染的 HTML 正常换行 */
+  white-space: normal;
 }
 
 .message-user .message-bubble {
@@ -457,8 +496,41 @@ onMounted(async () => {
 .thinking-dots {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
+  padding: 8px 4px;
   color: #999;
+}
+
+.thinking-dot {
+  display: inline-block;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  color: #999;
+  animation: thinking-bounce 1.4s ease-in-out infinite;
+}
+
+.thinking-dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.thinking-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.thinking-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes thinking-bounce {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-6px);
+  }
 }
 
 .chat-input-area {
@@ -622,5 +694,147 @@ onMounted(async () => {
   .chat-body {
     flex-direction: column;
   }
+}
+</style>
+
+<style>
+/* ===== 全局 Markdown 渲染样式（非 scoped，因为 v-html 插入的内容不受 scoped 影响） ===== */
+.markdown-body {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #24292e;
+  word-wrap: break-word;
+}
+
+/* 标题 */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #1a1a2e;
+}
+.markdown-body h1 { font-size: 20px; }
+.markdown-body h2 { font-size: 18px; }
+.markdown-body h3 { font-size: 16px; }
+.markdown-body h4 { font-size: 15px; }
+
+/* 段落 */
+.markdown-body p {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+/* 列表 */
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 22px;
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+.markdown-body li {
+  margin-bottom: 4px;
+}
+
+/* 引用 */
+.markdown-body blockquote {
+  padding: 6px 14px;
+  margin: 0 0 10px 0;
+  border-left: 4px solid #1890ff;
+  background: #f6f8fa;
+  color: #57606a;
+}
+.markdown-body blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* 行内代码 */
+.markdown-body code {
+  padding: 2px 6px;
+  margin: 0;
+  font-size: 13px;
+  font-family: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace;
+  background: rgba(175, 184, 193, 0.2);
+  border-radius: 4px;
+  color: #cf222e;
+}
+
+/* 代码块 - highlight.js 渲染的 <pre><code> 容器 */
+.markdown-body pre {
+  margin: 10px 0;
+  padding: 0;
+  border-radius: 8px;
+  overflow-x: auto;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  position: relative;
+}
+.markdown-body pre code {
+  display: block;
+  padding: 14px 16px;
+  font-size: 13px;
+  font-family: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace;
+  line-height: 1.5;
+  color: #24292e;
+  background: transparent;
+  border-radius: 0;
+  overflow-x: auto;
+  white-space: pre;
+  word-wrap: normal;
+}
+
+/* 链接 */
+.markdown-body a {
+  color: #0969da;
+  text-decoration: none;
+}
+.markdown-body a:hover {
+  text-decoration: underline;
+}
+
+/* 表格 */
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 13px;
+}
+.markdown-body table th,
+.markdown-body table td {
+  padding: 8px 12px;
+  border: 1px solid #d0d7de;
+  text-align: left;
+}
+.markdown-body table th {
+  background: #f6f8fa;
+  font-weight: 600;
+}
+.markdown-body table tr:nth-child(even) {
+  background: #fafbfc;
+}
+
+/* 水平线 */
+.markdown-body hr {
+  height: 1px;
+  margin: 16px 0;
+  background: #d0d7de;
+  border: none;
+}
+
+/* 图片 */
+.markdown-body img {
+  max-width: 100%;
+  border-radius: 6px;
+}
+
+/* 加粗 */
+.markdown-body strong {
+  font-weight: 600;
+  color: #1a1a2e;
 }
 </style>
