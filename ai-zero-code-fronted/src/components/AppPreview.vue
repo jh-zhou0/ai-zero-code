@@ -34,6 +34,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { EyeOutlined, LinkOutlined } from '@ant-design/icons-vue'
+import { buildDeployUrl, buildPreviewUrl } from '@/config/appConfig'
 
 const props = withDefaults(defineProps<{
   /** 部署 key：已部署的应用使用此 key */
@@ -58,17 +59,17 @@ const props = withDefaults(defineProps<{
  */
 const previewUrl = computed(() => {
   if (props.deployKey) {
-    return `http://localhost:8080/${props.deployKey}/`
+    return buildDeployUrl(props.deployKey)
   }
   if (props.appId && props.codeGenType) {
-    return `http://localhost:8123/api/static/${props.codeGenType}_${props.appId}/`
+    return buildPreviewUrl(props.codeGenType, props.appId)
   }
   return ''
 })
 
 function handleViewDeploy() {
   if (props.deployKey) {
-    const url = `http://localhost:8080/${props.deployKey}/`
+    const url = buildDeployUrl(props.deployKey)
     window.open(url, '_blank')
   }
 }

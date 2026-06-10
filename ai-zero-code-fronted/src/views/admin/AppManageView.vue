@@ -141,6 +141,7 @@ import {
   updateAppByAdmin,
 } from '@/api/appController'
 import { CodeGenTypeEnum, getCodeGenTypeLabel } from '@/constants/codeGenType'
+import { buildDeployUrl, buildPreviewUrl } from '@/config/appConfig'
 import type { TablePaginationConfig, SelectProps } from 'ant-design-vue'
 
 const router = useRouter()
@@ -356,10 +357,10 @@ function handlePreview(record: API.AppVO) {
   let url = ''
   // 优先使用已部署的地址
   if (record.deployKey) {
-    url = `http://localhost:8080/${record.deployKey}/`
+    url = buildDeployUrl(record.deployKey)
   } else if (record.codeGenType && record.id) {
     // 已生成但未部署，使用静态资源地址
-    url = `http://localhost:8123/api/static/${record.codeGenType}_${record.id}/`
+    url = buildPreviewUrl(record.codeGenType, record.id)
   }
   
   if (url) {

@@ -152,6 +152,7 @@ import { ArrowLeftOutlined, CloudUploadOutlined, EditOutlined } from '@ant-desig
 import { useUserStore } from '@/stores/user'
 import { getAppVoById, deployApp } from '@/api/appController'
 import AppPreview from '@/components/AppPreview.vue'
+import { getApiBaseUrl } from '@/config/appConfig'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
@@ -263,7 +264,7 @@ function sendMessage(messageText: string) {
   messages.value.push({ role: 'ai', content: '' })
 
   // 使用 EventSource 连接 SSE
-  const baseUrl = 'http://localhost:8123/api'
+  const baseUrl = getApiBaseUrl()
   const url = `${baseUrl}/app/chat/gen/code?appId=${appIdStr.value}&message=${encodeURIComponent(messageText)}`
 
   const eventSource = new EventSource(url, { withCredentials: true })

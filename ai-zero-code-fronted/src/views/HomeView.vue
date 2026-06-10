@@ -49,61 +49,19 @@
             :md="8"
             :lg="6"
           >
-            <a-card
-              hoverable
-              class="app-card"
-              @click="goToChat(app)"
-            >
-              <template #cover>
-                <div class="app-card-cover">
-                  <img
-                    v-if="app.cover"
-                    :src="app.cover"
-                    alt="cover"
-                    class="app-cover-img"
-                  />
-                  <img
-                    v-else
-                    src="@/assets/logo.svg"
-                    alt="default"
-                    class="app-cover-img default-cover"
-                  />
-                  <!-- 悬浮遮罩层 - 查看对话按钮 -->
-                  <div class="cover-overlay">
-                    <a-button
-                      type="primary"
-                      shape="round"
-                      size="small"
-                      class="overlay-btn"
-                      @click.stop="goToChat(app)"
-                    >
-                      查看对话
-                    </a-button>
-                  </div>
-                </div>
-              </template>
-            <div class="card-body">
-              <div class="card-left">
-                <a-avatar
-                  :size="48"
-                  :src="app.user?.userAvatar"
-                  style="backgroundColor: #1890ff;"
+            <AppCard :app="app" @click="goToChat">
+              <template #overlay>
+                <a-button
+                  type="primary"
+                  shape="round"
+                  size="small"
+                  class="overlay-btn"
+                  @click.stop="goToChat(app)"
                 >
-                  {{ (app.user?.userName || app.user?.userAccount || 'U').charAt(0) }}
-                </a-avatar>
-              </div>
-              <div class="card-right">
-                <div class="card-title">{{ app.appName || '未命名应用' }}</div>
-                <div class="card-creator">
-                  <span class="creator-name">{{ app.user?.userName || app.user?.userAccount || '未知用户' }}</span>
-                  <div class="deploy-tag">
-                    <a-tag v-if="app.deployKey" color="green" size="small">已部署</a-tag>
-                    <a-tag v-else color="default" size="small">未部署</a-tag>
-                  </div>
-                </div>
-              </div>
-            </div>
-            </a-card>
+                  查看对话
+                </a-button>
+              </template>
+            </AppCard>
           </a-col>
         </a-row>
         <a-empty v-else-if="!myLoading" description="暂无应用，快去创建一个吧" />
@@ -141,62 +99,20 @@
           :md="8"
           :lg="6"
         >
-          <a-card
-            hoverable
-            class="app-card"
-            @click="goToChat(app)"
-          >
-            <template #cover>
-              <div class="app-card-cover">
-                <img
-                  v-if="app.cover"
-                  :src="app.cover"
-                  alt="cover"
-                  class="app-cover-img"
-                />
-                <img
-                  v-else
-                  src="@/assets/logo.svg"
-                  alt="default"
-                  class="app-cover-img default-cover"
-                />
-                <!-- 悬浮遮罩层 - 预览按钮 -->
-                <div class="cover-overlay">
-                  <a-button
-                    type="primary"
-                    shape="round"
-                    size="small"
-                    class="overlay-btn"
-                    @click.stop="handlePreview(app)"
-                    :disabled="!app.deployKey"
-                  >
-                    预览
-                  </a-button>
-                </div>
-              </div>
+          <AppCard :app="app" @click="goToChat">
+            <template #overlay>
+              <a-button
+                type="primary"
+                shape="round"
+                size="small"
+                class="overlay-btn"
+                @click.stop="handlePreview(app)"
+                :disabled="!app.deployKey"
+              >
+                预览
+              </a-button>
             </template>
-            <div class="card-body">
-              <div class="card-left">
-                <a-avatar
-                  :size="48"
-                  :src="app.user?.userAvatar"
-                  style="backgroundColor: #1890ff;"
-                >
-                  {{ (app.user?.userName || app.user?.userAccount || 'U').charAt(0) }}
-                </a-avatar>
-              </div>
-              <div class="card-right">
-                <div class="card-title">{{ app.appName || '未命名应用' }}</div>
-                <div class="card-creator">
-                  <span class="creator-name">{{ app.user?.userName || app.user?.userAccount || '未知用户' }}</span>
-                  <div class="deploy-tag">
-                    <a-tag v-if="app.deployKey" color="green" size="small">已部署</a-tag>
-                    <a-tag v-else color="default" size="small">未部署</a-tag>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </a-card>
+          </AppCard>
         </a-col>
       </a-row>
       <a-empty v-else-if="!goodLoading" description="暂无精选应用" />
@@ -239,6 +155,7 @@ import { message } from 'ant-design-vue'
 import { useUserStore } from '@/stores/user'
 import { addApp, listMyAppVoByPage, listGoodAppVoByPage } from '@/api/appController'
 import AppPreview from '@/components/AppPreview.vue'
+import AppCard from '@/components/AppCard.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -435,56 +352,6 @@ onMounted(() => {
   margin: 0;
 }
 
-.app-card {
-  border-radius: 12px;
-  overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.app-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-}
-
-.app-card-cover {
-  position: relative;
-  height: 160px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #e0f7fa, #e8f5e9);
-}
-
-.app-cover-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.default-cover {
-  width: 64px;
-  height: 64px;
-  opacity: 0.3;
-}
-
-.cover-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0);
-  transition: background 0.3s ease;
-}
-
-.app-card-cover:hover .cover-overlay {
-  background: rgba(0, 0, 0, 0.45);
-}
-
 .overlay-btn {
   opacity: 0;
   transform: translateY(8px);
@@ -494,68 +361,6 @@ onMounted(() => {
 .app-card-cover:hover .overlay-btn {
   opacity: 1;
   transform: translateY(0);
-}
-
-.card-body {
-  display: flex;
-  gap: 12px;
-  padding: 4px 0;
-}
-
-.card-left {
-  flex-shrink: 0;
-  display: flex;
-  align-items: flex-start;
-}
-
-.card-right {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.card-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1a1a2e;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.card-creator {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 13px;
-  color: #666;
-}
-
-.creator-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-}
-
-.card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: auto;
-}
-
-.deploy-tag {
-  flex-shrink: 0;
-}
-
-.app-time {
-  font-size: 12px;
-  color: #999;
 }
 
 .pagination-wrapper {
