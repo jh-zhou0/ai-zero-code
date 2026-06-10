@@ -2,27 +2,47 @@
   <div class="home-page">
     <!-- 网站标题 -->
     <div class="hero-section">
-      <h1 class="hero-title">AI Zero Code</h1>
-      <p class="hero-subtitle">通过对话描述你的想法，AI 自动生成网站应用</p>
+      <h1 class="hero-title">AI 应用生成平台</h1>
+      <p class="hero-subtitle">一句话轻松创建网站应用</p>
 
       <!-- 提示词输入框 -->
       <div class="prompt-input-wrapper">
-        <a-input
-          v-model:value="prompt"
-          placeholder="描述你想要的应用，例如：帮我生成一个待办事项管理网站"
-          size="large"
-          class="prompt-input"
-          @press-enter="handleCreateApp"
-        />
-        <a-button
-          type="primary"
-          size="large"
-          :loading="creating"
-          class="prompt-submit-btn"
-          @click="handleCreateApp"
-        >
-          开始生成
-        </a-button>
+        <div class="input-container">
+          <a-textarea
+            v-model:value="prompt"
+            placeholder="帮我创建个人博客网站"
+            :rows="4"
+            :maxLength="2000"
+            class="prompt-input"
+            @press-enter="handleCreateApp"
+          />
+          <a-button
+            type="primary"
+            shape="circle"
+            :loading="creating"
+            class="prompt-submit-btn"
+            @click="handleCreateApp"
+          >
+            <template #icon>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </template>
+          </a-button>
+        </div>
+        <!-- 快捷提示词 -->
+        <div class="quick-prompts">
+          <a-button
+            v-for="(item, index) in quickPrompts"
+            :key="index"
+            size="small"
+            class="quick-prompt-btn"
+            @click="selectPrompt(item)"
+          >
+            {{ item.label }}
+          </a-button>
+        </div>
       </div>
     </div>
 
@@ -164,6 +184,26 @@ const userStore = useUserStore()
 const prompt = ref('')
 const creating = ref(false)
 
+// 快捷提示词
+const quickPrompts = [
+  {
+    label: '📝 个人博客',
+    value: '帮我创建一个现代化的个人博客网站，包含首页文章列表、文章详情页、关于我页面、联系表单等功能。要求采用简洁清新的设计风格，支持响应式布局，适配移动端和桌面端。配色以蓝白为主，字体清晰易读，整体风格专业但不失亲和力。',
+  },
+  {
+    label: '🛒 电商展示',
+    value: '帮我创建一个电商产品展示网站，包含商品分类导航、商品卡片列表、商品详情页、购物车功能、搜索过滤等。要求采用现代简约的设计风格，商品图片突出，价格信息清晰，支持筛选和排序功能。配色温暖舒适，用户体验流畅。',
+  },
+  {
+    label: '📊 数据看板',
+    value: '帮我创建一个数据分析仪表板网站，包含多个数据可视化图表（柱状图、折线图、饼图等）、关键指标卡片、数据表格、时间筛选器等。要求采用深色主题，图表色彩鲜明，数据展示清晰直观，支持实时数据更新和交互式筛选。',
+  },
+  {
+    label: '🎨 作品集',
+    value: '帮我创建一个创意作品集展示网站，包含项目网格展示、项目详情弹窗、分类过滤、平滑滚动动画、联系信息等。要求采用极简主义设计风格，大量留白，突出作品本身，支持图片懒加载和瀑布流布局，整体感觉高端大气。',
+  },
+]
+
 async function handleCreateApp() {
   const trimmedPrompt = prompt.value.trim()
   if (!trimmedPrompt) {
@@ -191,6 +231,10 @@ async function handleCreateApp() {
   } finally {
     creating.value = false
   }
+}
+
+function selectPrompt(item: { label: string; value: string }) {
+  prompt.value = item.value
 }
 
 // 我的应用列表
@@ -284,20 +328,20 @@ onMounted(() => {
 
 <style scoped>
 .home-page {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .hero-section {
   text-align: center;
-  padding: 48px 24px 32px;
+  padding: 80px 24px 60px;
+  background: linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 50%, #e0f2f1 100%);
 }
 
 .hero-title {
-  font-size: 42px;
+  font-size: 48px;
   font-weight: 700;
   color: #1a1a2e;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   background: linear-gradient(135deg, #00b4d8, #0077b6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -305,33 +349,83 @@ onMounted(() => {
 }
 
 .hero-subtitle {
-  font-size: 16px;
+  font-size: 18px;
   color: #666;
-  margin-bottom: 32px;
+  margin-bottom: 40px;
 }
 
 .prompt-input-wrapper {
-  display: flex;
-  max-width: 700px;
+  max-width: 600px;
   margin: 0 auto;
-  gap: 12px;
+}
+
+.quick-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  justify-content: center;
+}
+
+.quick-prompt-btn {
+  font-size: 13px;
+  border-radius: 16px;
+  padding: 4px 12px;
+  height: auto;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #d9d9d9;
+  transition: all 0.3s ease;
+}
+
+.quick-prompt-btn:hover {
+  background: #fff;
+  border-color: #00b4d8;
+  color: #00b4d8;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 180, 216, 0.2);
+}
+
+.input-container {
+  position: relative;
 }
 
 .prompt-input {
-  flex: 1;
-  border-radius: 8px;
+  border-radius: 12px;
+  border: 2px solid #d9d9d9;
+  transition: all 0.3s ease;
 }
 
 .prompt-input :deep(.ant-input) {
-  border-radius: 8px;
+  border-radius: 12px;
+  border: none;
+  font-size: 15px;
+  line-height: 1.6;
+  padding-right: 55px !important;
+}
+
+.prompt-input :deep(.ant-input):focus {
+  box-shadow: 0 0 0 2px rgba(0, 180, 216, 0.1);
 }
 
 .prompt-submit-btn {
-  border-radius: 8px;
-  height: 44px;
-  padding: 0 32px;
-  font-size: 16px;
-  white-space: nowrap;
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #00b4d8, #0077b6);
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 180, 216, 0.3);
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.prompt-submit-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 180, 216, 0.4);
 }
 
 .content-section {

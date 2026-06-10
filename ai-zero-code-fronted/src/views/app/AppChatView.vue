@@ -70,7 +70,7 @@
         <div class="chat-input-area">
           <a-textarea
             v-model:value="userInput"
-            placeholder="输入消息..."
+            placeholder="请描述你想生成的网站，越详细效果越好哦"
             :rows="2"
             :maxLength="2000"
             @press-enter="handleSend"
@@ -399,7 +399,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 24px;
+  padding: 10px 20px;
   background: #fff;
   border-bottom: 1px solid #f0f0f0;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
@@ -441,25 +441,24 @@ onMounted(async () => {
 
 /* ===== 左侧：对话区域 ===== */
 .chat-left {
-  flex: 1;
+  flex: 0 0 40%;
   display: flex;
   flex-direction: column;
   border-right: 1px solid #f0f0f0;
-  min-width: 360px;
-  max-width: 600px;
+  min-width: 320px;
 }
 
 .message-list {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 16px;
   background: #fafafa;
 }
 
 .message-item {
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .message-user {
@@ -471,8 +470,8 @@ onMounted(async () => {
 }
 
 .message-bubble {
-  max-width: 480px;
-  padding: 12px 16px;
+  max-width: 100%;
+  padding: 10px 14px;
   border-radius: 12px;
   font-size: 14px;
   line-height: 1.6;
@@ -536,10 +535,10 @@ onMounted(async () => {
 
 .chat-input-area {
   display: flex;
-  padding: 12px 20px;
+  padding: 12px 16px;
   border-top: 1px solid #f0f0f0;
   background: #fff;
-  gap: 12px;
+  gap: 10px;
   align-items: flex-end;
 }
 
@@ -557,7 +556,7 @@ onMounted(async () => {
 
 /* ===== 右侧：网页预览区域 ===== */
 .chat-right {
-  flex: 1;
+  flex: 0 0 60%;
   display: flex;
   flex-direction: column;
   background: #fff;
