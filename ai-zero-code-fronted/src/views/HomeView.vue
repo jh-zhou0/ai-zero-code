@@ -32,13 +32,11 @@
       <template v-if="userStore.isLoggedIn">
         <div class="section-header">
           <h2 class="section-title">我的应用</h2>
-        </div>
-        <div class="search-bar">
           <a-input-search
             v-model:value="mySearchName"
             placeholder="搜索我的应用名称"
             allow-clear
-            style="width: 320px"
+            style="width: 240px"
             @search="handleMySearch"
           />
         </div>
@@ -126,13 +124,11 @@
       <!-- 精选应用 -->
       <div class="section-header">
         <h2 class="section-title">精选应用</h2>
-      </div>
-      <div class="search-bar">
         <a-input-search
           v-model:value="goodSearchName"
           placeholder="搜索精选应用名称"
           allow-clear
-          style="width: 320px"
+          style="width: 240px"
           @search="handleGoodSearch"
         />
       </div>
@@ -361,12 +357,6 @@ function handlePreview(app: API.AppVO) {
   previewApp.value = app
   previewVisible.value = true
 }
-
-function formatTime(time?: string) {
-  if (!time) return ''
-  return time.slice(0, 10)
-}
-
 onMounted(() => {
   if (userStore.isLoggedIn) {
     loadMyApps()
@@ -434,6 +424,7 @@ onMounted(() => {
 .section-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 16px;
 }
 
@@ -442,10 +433,6 @@ onMounted(() => {
   font-weight: 600;
   color: #1a1a2e;
   margin: 0;
-}
-
-.search-bar {
-  margin-bottom: 16px;
 }
 
 .app-card {
