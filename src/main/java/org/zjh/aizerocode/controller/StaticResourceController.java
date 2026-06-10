@@ -14,7 +14,7 @@ import org.springframework.web.servlet.HandlerMapping;
 
 import java.io.File;
 
-import static org.zjh.aizerocode.constant.AppConstant.FILE_DEPLOY_ROOT_DIR;
+import static org.zjh.aizerocode.constant.AppConstant.FILE_SAVE_ROOT_DIR;
 
 @RestController
 @RequestMapping("/static")
@@ -41,7 +41,7 @@ public class StaticResourceController {
                 resourcePath = "/index.html";
             }
             // 构建文件路径
-            String filePath = FILE_DEPLOY_ROOT_DIR + "/" + deployKey + resourcePath;
+            String filePath = FILE_SAVE_ROOT_DIR + "/" + deployKey + resourcePath;
             File file = new File(filePath);
             // 检查文件是否存在
             if (!file.exists()) {

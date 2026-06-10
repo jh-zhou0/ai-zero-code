@@ -30,6 +30,30 @@ const router = createRouter({
       component: () => import('@/views/admin/UserManageView.vue'),
       meta: { access: AccessEnum.ADMIN, title: '用户管理' },
     },
+    {
+      path: '/admin/appManage',
+      name: 'appManage',
+      component: () => import('@/views/admin/AppManageView.vue'),
+      meta: { access: AccessEnum.ADMIN, title: '应用管理' },
+    },
+    {
+      path: '/app/chat/:id',
+      name: 'appChat',
+      component: () => import('@/views/app/AppChatView.vue'),
+      meta: { access: AccessEnum.USER },
+    },
+    {
+      path: '/app/manage',
+      name: 'myAppManage',
+      component: () => import('@/views/app/MyAppManageView.vue'),
+      meta: { access: AccessEnum.USER, title: '我的应用' },
+    },
+    {
+      path: '/app/edit/:id',
+      name: 'appEdit',
+      component: () => import('@/views/app/AppEditView.vue'),
+      meta: { access: AccessEnum.USER },
+    },
   ],
 })
 

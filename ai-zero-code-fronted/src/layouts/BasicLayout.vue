@@ -24,6 +24,8 @@ import GlobalFooter from '@/components/GlobalFooter.vue'
   flex: 1;
   padding: 24px;
   background: linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 50%, #f1f8e9 100%);
+  min-height: 0;
+  overflow-y: auto;
 }
 
 @media (max-width: 768px) {
