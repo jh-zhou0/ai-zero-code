@@ -84,16 +84,27 @@
                   </div>
                 </div>
               </template>
-              <a-card-meta>
-                <template #title>{{ app.appName || '未命名应用' }}</template>
-                <template #description>
-                  <div class="app-meta">
-                    <span class="app-time">{{ formatTime(app.createTime) }}</span>
-                    <a-tag v-if="app.deployKey" color="green">已部署</a-tag>
-                    <a-tag v-else color="default">未部署</a-tag>
+            <div class="card-body">
+              <div class="card-left">
+                <a-avatar
+                  :size="48"
+                  :src="app.user?.userAvatar"
+                  style="backgroundColor: #1890ff;"
+                >
+                  {{ (app.user?.userName || app.user?.userAccount || 'U').charAt(0) }}
+                </a-avatar>
+              </div>
+              <div class="card-right">
+                <div class="card-title">{{ app.appName || '未命名应用' }}</div>
+                <div class="card-creator">
+                  <span class="creator-name">{{ app.user?.userName || app.user?.userAccount || '未知用户' }}</span>
+                  <div class="deploy-tag">
+                    <a-tag v-if="app.deployKey" color="green" size="small">已部署</a-tag>
+                    <a-tag v-else color="default" size="small">未部署</a-tag>
                   </div>
-                </template>
-              </a-card-meta>
+                </div>
+              </div>
+            </div>
             </a-card>
           </a-col>
         </a-row>
@@ -168,16 +179,27 @@
                 </div>
               </div>
             </template>
-            <a-card-meta>
-              <template #title>{{ app.appName || '未命名应用' }}</template>
-              <template #description>
-                <div class="app-meta">
-                  <span class="app-time">{{ formatTime(app.createTime) }}</span>
-                  <a-tag v-if="app.deployKey" color="green">已部署</a-tag>
-                  <a-tag v-else color="default">未部署</a-tag>
+            <div class="card-body">
+              <div class="card-left">
+                <a-avatar
+                  :size="48"
+                  :src="app.user?.userAvatar"
+                  style="backgroundColor: #1890ff;"
+                >
+                  {{ (app.user?.userName || app.user?.userAccount || 'U').charAt(0) }}
+                </a-avatar>
+              </div>
+              <div class="card-right">
+                <div class="card-title">{{ app.appName || '未命名应用' }}</div>
+                <div class="card-creator">
+                  <span class="creator-name">{{ app.user?.userName || app.user?.userAccount || '未知用户' }}</span>
+                  <div class="deploy-tag">
+                    <a-tag v-if="app.deployKey" color="green" size="small">已部署</a-tag>
+                    <a-tag v-else color="default" size="small">未部署</a-tag>
+                  </div>
                 </div>
-              </template>
-            </a-card-meta>
+              </div>
+            </div>
           </a-card>
         </a-col>
       </a-row>
@@ -487,11 +509,61 @@ onMounted(() => {
   transform: translateY(0);
 }
 
-.app-meta {
+.card-body {
+  display: flex;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.card-left {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+}
+
+.card-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a2e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-creator {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+.creator-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.deploy-tag {
+  flex-shrink: 0;
 }
 
 .app-time {

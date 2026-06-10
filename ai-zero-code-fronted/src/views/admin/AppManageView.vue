@@ -341,11 +341,12 @@ function handleDelete(record: API.AppVO) {
 }
 
 /**
- * 查看会话：跳转到应用的聊天页面
+ * 查看会话：在新窗口打开应用的聊天页面
  */
 function handleViewChat(record: API.AppVO) {
   if (!record.id) return
-  router.push(`/app/chat/${record.id}`)
+  const url = `${window.location.origin}/app/chat/${record.id}`
+  window.open(url, '_blank')
 }
 
 /**
