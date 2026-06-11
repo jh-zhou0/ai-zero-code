@@ -144,8 +144,6 @@ import { CodeGenTypeEnum, getCodeGenTypeLabel } from '@/constants/codeGenType'
 import { buildDeployUrl, buildPreviewUrl } from '@/config/appConfig'
 import type { TablePaginationConfig, SelectProps } from 'ant-design-vue'
 
-const router = useRouter()
-
 /** 生成类型下拉选项，value 是枚举值，label 是中文描述 */
 const codeGenTypeOptions: SelectProps['options'] = Object.values(CodeGenTypeEnum).map((item) => ({
   value: item.value,
@@ -362,7 +360,7 @@ function handlePreview(record: API.AppVO) {
     // 已生成但未部署，使用静态资源地址
     url = buildPreviewUrl(record.codeGenType, record.id)
   }
-  
+
   if (url) {
     window.open(url, '_blank')
   } else {
