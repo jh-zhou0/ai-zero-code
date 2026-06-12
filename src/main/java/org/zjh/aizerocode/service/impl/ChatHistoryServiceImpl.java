@@ -107,7 +107,7 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         }
         // 排序
         if (StrUtil.isNotBlank(sortField)) {
-            queryWrapper.orderBy(sortField, "ascend".equals(sortOrder));
+            queryWrapper.orderBy(StrUtil.toUnderlineCase(sortField), "ascend".equals(sortOrder));
         } else {
             // 默认按创建时间降序排列
             queryWrapper.orderBy(ChatHistory::getCreateTime, false);

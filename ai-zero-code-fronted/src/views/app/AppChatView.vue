@@ -34,9 +34,20 @@
       <!-- 左侧：对话区域 -->
       <div class="chat-left">
         <div class="message-list" ref="messageListRef">
+          <!-- 加载更多 -->
+          <div v-if="historyHasMore" class="load-more-wrapper">
+            <a-button
+              type="dashed"
+              :loading="historyLoading"
+              @click="handleLoadMore"
+            >
+              加载更多消息
+            </a-button>
+          </div>
+
           <div
             v-for="(msg, index) in messages"
-            :key="index"
+            :key="msg.key"
             class="message-item"
             :class="msg.role === 'user' ? 'message-user' : 'message-ai'"
           >
@@ -58,7 +69,7 @@
             </div>
             <div class="message-content">
               <!-- AI 思考中：显示波纹动画，思考完成后直接在同一气泡输出内容 -->
-              <div v-if="msg.role === 'ai' && !msg.content && isLastMsg(index)" class="message-bubble thinking-dots">
+              <div v-if="msg.role === 'ai' && !msg.content && msg.isCurrentSession && isLastMsg(index)" class="message-bubble thinking-dots">
                 <span class="thinking-dot">.</span>
                 <span class="thinking-dot">.</span>
                 <span class="thinking-dot">.</span>
@@ -68,24 +79,32 @@
           </div>
         </div>
         <div class="chat-input-area">
-          <a-textarea
-            v-model:value="userInput"
-            placeholder="请描述你想生成的网站，越详细效果越好哦"
-            :rows="2"
-            :maxLength="2000"
-            @press-enter="handleSend"
-            class="chat-textarea"
-            :disabled="aiThinking"
-          />
-          <a-button
-            type="primary"
-            :loading="aiThinking"
-            :disabled="!userInput.trim()"
-            @click="handleSend"
-            class="send-btn"
-          >
-            发送
-          </a-button>
+          <div class="input-container">
+            <a-textarea
+              v-model:value="userInput"
+              placeholder="请描述你想生成的网站，越详细效果越好哦"
+              :rows="2"
+              :maxLength="2000"
+              @press-enter="handleSend"
+              class="chat-textarea"
+              :disabled="aiThinking"
+            />
+            <a-button
+              type="primary"
+              shape="circle"
+              :loading="aiThinking"
+              :disabled="!userInput.trim()"
+              @click="handleSend"
+              class="chat-submit-btn"
+            >
+              <template #icon>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </template>
+            </a-button>
+          </div>
         </div>
       </div>
 
@@ -93,7 +112,7 @@
       <div class="chat-right">
         <!-- 代码已生成完成 → 展示预览 -->
         <AppPreview
-          v-if="hasGeneratedCode && codeGenType"
+          v-if="shouldShowPreview && codeGenType"
           :deploy-key="deployKey"
           :app-id="appIdStr"
           :code-gen-type="codeGenType"
@@ -151,6 +170,7 @@ import { message } from 'ant-design-vue'
 import { ArrowLeftOutlined, CloudUploadOutlined, EditOutlined } from '@ant-design/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { getAppVoById, deployApp } from '@/api/appController'
+import { listAppChatHistory } from '@/api/chatHistoryController'
 import AppPreview from '@/components/AppPreview.vue'
 import { getApiBaseUrl } from '@/config/appConfig'
 import MarkdownIt from 'markdown-it'
@@ -168,14 +188,21 @@ const userStore = useUserStore()
 const appIdStr = computed(() => route.params.id as string)
 const appInfo = ref<API.AppVO | null>(null)
 
-// 聊天
-const messages = ref<{ role: string; content: string }[]>([])
+// 聊天消息
+const messages = ref<{ role: string; content: string; key: string; isCurrentSession: boolean }[]>([])
+let msgKeyCounter = 0
 const userInput = ref('')
 const aiThinking = ref(false)
 const messageListRef = ref<HTMLElement | null>(null)
+
+// 对话历史管理
+const historyLoading = ref(false)
+const historyCursor = ref<string | undefined>(undefined)
+const historyHasMore = ref(false)
+const chatHistoryTotal = ref(0)
+
 // 预览 - codeGenType 在应用创建时就有，不能用于判断代码是否已生成
 const codeGenType = ref('')
-const hasInitPrompt = ref(false)
 const deployKey = ref('')
 /** 标记 SSE 流式调用是否已完成，即代码是否真正生成完毕 */
 const hasGeneratedCode = ref(false)
@@ -184,6 +211,25 @@ const sseFinished = ref(false)
 
 // 部署
 const deploying = ref(false)
+
+/**
+ * 是否展示预览：
+ * 1. 当前会话已生成代码（hasGeneratedCode）
+ * 2. 或者已有 deployKey（之前已部署）
+ * 3. 或者该应用有至少 2 条对话记录且已有 codeGenType
+ */
+const shouldShowPreview = computed(() => {
+  if (!codeGenType.value) return false
+  return hasGeneratedCode.value || !!deployKey.value || chatHistoryTotal.value >= 2
+})
+
+/**
+ * 自己创建的应用：appInfo.userId === currentUser.id
+ */
+const isOwnApp = computed(() => {
+  if (!appInfo.value?.userId || !userStore.currentUser?.id) return false
+  return appInfo.value.userId === userStore.currentUser.id
+})
 
 /**
  * Markdown 渲染器配置：
@@ -251,17 +297,108 @@ async function loadAppInfo() {
 }
 
 /**
+ * 将 ChatHistory 记录转换为前端消息格式
+ */
+function convertHistoryToMessage(record: API.ChatHistory): {
+  role: string
+  content: string
+  key: string
+  isCurrentSession: boolean
+} {
+  return {
+    role: record.messageType === 'user' ? 'user' : 'ai',
+    content: record.message || '',
+    key: `history-${record.id || msgKeyCounter++}`,
+    isCurrentSession: false,
+  }
+}
+
+/**
+ * 加载对话历史（游标分页，每次 10 条）
+ */
+async function loadHistory(lastCreateTime?: string) {
+  historyLoading.value = true
+  try {
+    const res = await listAppChatHistory({
+      appId: appIdStr.value as unknown as number,
+      pageSize: 10,
+      lastCreateTime: lastCreateTime,
+    })
+    if (res.data?.code === 0 && res.data?.data) {
+      const pageData = res.data.data
+      const records = pageData.records || []
+      chatHistoryTotal.value = pageData.totalRow || 0
+
+      // 后端返回的记录是降序（最新在前），需要反转成升序（最旧在前/最新在底）展示
+      const converted = records
+        .filter((r) => r.messageType && r.message)
+        .map(convertHistoryToMessage)
+        .reverse()
+
+      if (lastCreateTime) {
+        // 加载更早的历史：追加到现有历史消息之前
+        messages.value = [...converted, ...messages.value]
+      } else {
+        // 首次加载：直接设置为消息列表（已反转升序）
+        messages.value = converted
+      }
+
+      // 更新游标：取当前页最旧的消息的 createTime（即 records 最后一个元素，因为后端返回降序）
+      if (records.length > 0) {
+        const oldestRecord = records[records.length - 1]
+        historyCursor.value = oldestRecord?.createTime || undefined
+      } else {
+        historyCursor.value = undefined
+      }
+
+      // 是否还有更多
+      const loadedCount = lastCreateTime
+        ? messages.value.length
+        : converted.length
+      historyHasMore.value = loadedCount < chatHistoryTotal.value
+
+      // 滚动到底部
+      scrollToBottom()
+    } else {
+      message.error(res.data?.message || '获取对话历史失败')
+    }
+  } catch {
+    message.error('获取对话历史失败')
+  } finally {
+    historyLoading.value = false
+  }
+}
+
+/**
+ * 加载更多历史消息
+ */
+function handleLoadMore() {
+  if (historyLoading.value || !historyCursor.value) return
+  loadHistory(historyCursor.value)
+}
+
+/**
  * 使用 EventSource 发送 SSE 请求
  */
 function sendMessage(messageText: string) {
   // 添加用户消息
-  messages.value.push({ role: 'user', content: messageText })
+  messages.value.push({
+    role: 'user',
+    content: messageText,
+    key: `session-${msgKeyCounter++}`,
+    isCurrentSession: true,
+  })
   userInput.value = ''
   aiThinking.value = true
   sseFinished.value = false
 
   // 创建一个 AI 消息占位
-  messages.value.push({ role: 'ai', content: '' })
+  messages.value.push({
+    role: 'ai',
+    content: '',
+    key: `session-${msgKeyCounter++}`,
+    isCurrentSession: true,
+  })
 
   // 使用 EventSource 连接 SSE
   const baseUrl = getApiBaseUrl()
@@ -373,11 +510,15 @@ function scrollToBottom() {
 
 onMounted(async () => {
   await loadAppInfo()
-  // 区分两种进入方式：
-  // 1. 从首页"开始生成"进入：URL 带 ?new=true → 自动调用 AI 生成
-  // 2. 从"查看对话"进入：不带 ?new=true → 仅展示已有内容，不触发 AI 调用
-  if (route.query.new === 'true' && appInfo.value?.initPrompt) {
-    hasInitPrompt.value = true
+
+  // 1. 加载对话历史（游标分页，首次加载最近 10 条）
+  await loadHistory()
+
+  // 2. 自动发送初始消息逻辑：
+  //    - 是自己的 app
+  //    - 并且没有对话历史（totalRow === 0）
+  //    - 才有 initPrompt 才自动触发
+  if (isOwnApp.value && chatHistoryTotal.value === 0 && appInfo.value?.initPrompt) {
     sendMessage(appInfo.value.initPrompt)
   }
 })
@@ -455,6 +596,11 @@ onMounted(async () => {
   background: #fafafa;
 }
 
+.load-more-wrapper {
+  text-align: center;
+  padding: 8px 0 16px;
+}
+
 .message-item {
   display: flex;
   gap: 10px;
@@ -467,6 +613,16 @@ onMounted(async () => {
 
 .message-avatar {
   flex-shrink: 0;
+}
+
+.message-content {
+  max-width: calc(100% - 60px);
+  min-width: 0;
+}
+
+.message-user .message-content {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .message-bubble {
@@ -542,16 +698,61 @@ onMounted(async () => {
   align-items: flex-end;
 }
 
-.chat-textarea {
-  flex: 1;
-  border-radius: 8px;
-  resize: none;
+.input-container {
+  position: relative;
+  width: 100%;
 }
 
-.send-btn {
-  height: 44px;
-  border-radius: 8px;
-  flex-shrink: 0;
+.chat-textarea {
+  border-radius: 12px;
+  border: 2px solid #d9d9d9;
+  transition: all 0.3s ease;
+}
+
+.chat-textarea:hover {
+  border-color: #40a9ff;
+}
+
+.chat-textarea:focus-within {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.chat-textarea :deep(.ant-input) {
+  border-radius: 12px;
+  border: none;
+  font-size: 14px;
+  line-height: 1.6;
+  padding-right: 50px !important;
+  overflow-x: hidden;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.chat-submit-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #00b4d8, #0077b6);
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 180, 216, 0.3);
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.chat-submit-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 180, 216, 0.4);
+}
+
+.chat-submit-btn:disabled {
+  background: #d9d9d9;
+  box-shadow: none;
 }
 
 /* ===== 右侧：网页预览区域 ===== */

@@ -37,6 +37,12 @@ const router = createRouter({
       meta: { access: AccessEnum.ADMIN, title: '应用管理' },
     },
     {
+      path: '/admin/chatHistoryManage',
+      name: 'chatHistoryManage',
+      component: () => import('@/views/admin/ChatHistoryManageView.vue'),
+      meta: { access: AccessEnum.ADMIN, title: '对话管理' },
+    },
+    {
       path: '/app/chat/:id',
       name: 'appChat',
       component: () => import('@/views/app/AppChatView.vue'),
