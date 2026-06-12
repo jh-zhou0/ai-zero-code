@@ -3,6 +3,9 @@ spring:
     name: ai-zero-code
   profiles:
     active: local
+  session:
+    store-type: redis
+    timeout: 604800
   datasource:
     url: jdbc:mysql://localhost:3306/ai_zero_code
     username: root
@@ -14,9 +17,12 @@ spring:
       password:
       ttl: 3600
 server:
+  port: 8123
   servlet:
     context-path: /api
-  port: 8123
+    session:
+      cookie:
+        max-age: 604800
 # springdoc-openapi
 springdoc:
   group-configs:
