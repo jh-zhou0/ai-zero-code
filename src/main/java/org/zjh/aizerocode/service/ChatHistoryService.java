@@ -3,6 +3,7 @@ package org.zjh.aizerocode.service;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import org.zjh.aizerocode.model.dto.ChatHistoryQueryRequest;
 import org.zjh.aizerocode.model.entity.ChatHistory;
 import org.zjh.aizerocode.model.entity.User;
@@ -46,6 +47,16 @@ public interface ChatHistoryService extends IService<ChatHistory> {
     Page<ChatHistory> listAppChatHistoryByPage(Long appId, int pageSize,
                                                LocalDateTime lastCreateTime,
                                                User loginUser);
+
+    /**
+     * 加载指定应用的对话历史到内存
+     *
+     * @param appId       应用id
+     * @param chatMemory  对话历史内存
+     * @param maxCount    最大数量
+     * @return 加载数量
+     */
+    int loadChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount);
 
     /**
      * 获取查询条件
