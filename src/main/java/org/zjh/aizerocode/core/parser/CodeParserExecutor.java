@@ -1,4 +1,4 @@
-package org.zjh.aizerocode.ai.core.parser;
+package org.zjh.aizerocode.core.parser;
 
 import org.zjh.aizerocode.ai.enums.CodeGenTypeEnum;
 import org.zjh.aizerocode.ai.model.HtmlCodeResult;

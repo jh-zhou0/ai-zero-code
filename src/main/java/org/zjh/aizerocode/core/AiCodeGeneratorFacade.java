@@ -1,11 +1,13 @@
-package org.zjh.aizerocode.ai.core;
+package org.zjh.aizerocode.core;
 
 import cn.hutool.core.util.StrUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.zjh.aizerocode.ai.core.parser.CodeParserExecutor;
-import org.zjh.aizerocode.ai.core.saver.CodeFileSaverExecutor;
+import org.zjh.aizerocode.ai.AiCodeGeneratorService;
+import org.zjh.aizerocode.ai.AiCodeGeneratorServiceFactory;
+import org.zjh.aizerocode.core.parser.CodeParserExecutor;
+import org.zjh.aizerocode.core.saver.CodeFileSaverExecutor;
 import org.zjh.aizerocode.ai.enums.CodeGenTypeEnum;
 import org.zjh.aizerocode.exception.BusinessException;
 import org.zjh.aizerocode.exception.ErrorCode;

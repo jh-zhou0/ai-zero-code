@@ -1,4 +1,4 @@
-package org.zjh.aizerocode.ai.core;
+package org.zjh.aizerocode.ai;
 
 import dev.langchain4j.service.SystemMessage;
 import org.zjh.aizerocode.ai.model.HtmlCodeResult;

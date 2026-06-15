@@ -4,7 +4,6 @@ import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.zjh.aizerocode.ai.core.AiCodeGeneratorService;
 import org.zjh.aizerocode.ai.model.HtmlCodeResult;
 import org.zjh.aizerocode.ai.model.MultiFileCodeResult;
 

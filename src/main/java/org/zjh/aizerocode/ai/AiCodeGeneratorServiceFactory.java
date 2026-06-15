@@ -1,4 +1,4 @@
-package org.zjh.aizerocode.ai.core;
+package org.zjh.aizerocode.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;

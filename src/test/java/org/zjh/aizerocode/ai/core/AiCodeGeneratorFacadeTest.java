@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.zjh.aizerocode.ai.enums.CodeGenTypeEnum;
+import org.zjh.aizerocode.core.AiCodeGeneratorFacade;
 import reactor.core.publisher.Flux;
 
 import java.io.File;

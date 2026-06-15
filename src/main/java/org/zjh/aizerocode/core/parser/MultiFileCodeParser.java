@@ -1,4 +1,4 @@
-package org.zjh.aizerocode.ai.core.parser;
+package org.zjh.aizerocode.core.parser;
 
 import cn.hutool.core.util.StrUtil;
 import org.zjh.aizerocode.ai.model.MultiFileCodeResult;

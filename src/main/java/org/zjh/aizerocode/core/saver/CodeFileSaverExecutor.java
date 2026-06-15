@@ -1,4 +1,4 @@
-package org.zjh.aizerocode.ai.core.saver;
+package org.zjh.aizerocode.core.saver;
 
 import org.zjh.aizerocode.ai.enums.CodeGenTypeEnum;
 import org.zjh.aizerocode.ai.model.HtmlCodeResult;

@@ -1,4 +1,4 @@
-package org.zjh.aizerocode.ai.core.parser;
+package org.zjh.aizerocode.core.parser;
 
 /**
  * 代码解析器
