@@ -327,7 +327,7 @@ async function loadHistory(lastCreateTime?: string) {
     if (res.data?.code === 0 && res.data?.data) {
       const pageData = res.data.data
       const records = pageData.records || []
-      chatHistoryTotal.value = pageData.totalRow || 0
+      chatHistoryTotal.value = Number(pageData.totalRow) || 0
 
       // 后端返回的记录是降序（最新在前），需要反转成升序（最旧在前/最新在底）展示
       const converted = records
@@ -519,6 +519,7 @@ onMounted(async () => {
   //    - 并且没有对话历史（totalRow === 0）
   //    - 才有 initPrompt 才自动触发
   if (isOwnApp.value && chatHistoryTotal.value === 0 && appInfo.value?.initPrompt) {
+    console.log('自动发送初始消息：', appInfo.value.initPrompt)
     sendMessage(appInfo.value.initPrompt)
   }
 })

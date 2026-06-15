@@ -11,8 +11,9 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
-import org.zjh.aizerocode.core.AiCodeGeneratorFacade;
 import org.zjh.aizerocode.ai.enums.CodeGenTypeEnum;
+import org.zjh.aizerocode.core.AiCodeGeneratorFacade;
+import org.zjh.aizerocode.core.handler.StreamHandlerExecutor;
 import org.zjh.aizerocode.exception.BusinessException;
 import org.zjh.aizerocode.exception.ErrorCode;
 import org.zjh.aizerocode.exception.ThrowUtils;
@@ -57,6 +58,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
 
+    @Resource
+    private StreamHandlerExecutor streamHandlerExecutor;
+
     @Override
     public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
         // 1. 参数校验
@@ -80,21 +84,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 6. 调用 AI 生成代码
         Flux<String> contentFlux = aiCodeGeneratorFacade.generateCodeAndSaveStream(message, codeGenTypeEnum, appId);
         // 7. 收集AI响应内容并保存到对话历史
-        StringBuilder codeBuilder = new StringBuilder();
-        return contentFlux
-                .map(chunk -> {
-                    codeBuilder.append(chunk);
-                    return chunk;
-                })
-                .doOnComplete(() -> {
-                    // 8. 保存对话历史
-                    chatHistoryService.addChatMessage(appId, codeBuilder.toString(), ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
-                })
-                .doOnError(throwable -> {
-                    // 9. 添加错误信息到对话历史
-                    String errorMsg = "AI回复失败：" + throwable.getMessage();
-                    chatHistoryService.addChatMessage(appId, errorMsg, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
-                });
+        return streamHandlerExecutor.execute(contentFlux, chatHistoryService, appId, loginUser, codeGenTypeEnum);
     }
 
     @Override
@@ -228,6 +218,5 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                 .eq(App::getUserId, userId)
                 .orderBy(StrUtil.toUnderlineCase(sortField), "ascend".equals(sortOrder));
     }
-
 
 }

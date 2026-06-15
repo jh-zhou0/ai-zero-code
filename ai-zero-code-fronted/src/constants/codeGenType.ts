@@ -11,6 +11,10 @@ export const CodeGenTypeEnum = {
     value: 'multi_file',
     label: '原生多文件模式',
   },
+  VUE_PROJECT: {
+    value: 'Vue 工程模式',
+    label: 'vue_project'
+  },
 } as const
 
 export type CodeGenTypeValue = (typeof CodeGenTypeEnum)[keyof typeof CodeGenTypeEnum]['value']

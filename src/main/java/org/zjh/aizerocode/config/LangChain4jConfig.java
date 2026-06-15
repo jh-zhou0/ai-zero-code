@@ -1,8 +1,6 @@
 package org.zjh.aizerocode.config;
 
-import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -31,37 +29,11 @@ public class LangChain4jConfig {
     @Value("${langchain4j.open-ai.chat-model.max-tokens:8192}")
     private Integer maxTokens;
 
-    @Value("${langchain4j.open-ai.chat-model.response-format:json_object}")
-    private String responseFormat;
-
-    @Value("${langchain4j.open-ai.chat-model.strict-json-schema:true}")
-    private Boolean strictJsonSchema;
-
-    /**
-     * 配置 ChatModel，设置长超时时间
-     * 连接超时：30秒
-     * 读取超时：5分钟（AI生成可能较慢）
-     */
     @Bean
-    public ChatModel chatModel() {
-        return OpenAiChatModel.builder()
-                .baseUrl(baseUrl)
-                .apiKey(apiKey)
-                .modelName(modelName)
-                .maxTokens(maxTokens)
-                .responseFormat(responseFormat)
-                .strictJsonSchema(strictJsonSchema)
-                .timeout(Duration.ofMinutes(5)) // 5分钟超时
-                .build();
-    }
-
-    /**
-     * 配置 StreamingChatModel，设置长超时时间
-     * 连接超时：30秒
-     * 读取超时：5分钟（AI生成可能较慢）
-     */
-    @Bean
-    public StreamingChatModel streamingChatModel() {
+    public StreamingChatModel reasoningStreamingChatModel() {
+        // 生产环境使用 Reasoning 模型
+        // final String modelName = "";
+        // final int maxTokens = 32768;
         return OpenAiStreamingChatModel.builder()
                 .baseUrl(baseUrl)
                 .apiKey(apiKey)
