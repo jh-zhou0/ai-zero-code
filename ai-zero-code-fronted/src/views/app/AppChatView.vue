@@ -174,8 +174,7 @@ import { listAppChatHistory } from '@/api/chatHistoryController'
 import AppPreview from '@/components/AppPreview.vue'
 import { getApiBaseUrl } from '@/config/appConfig'
 import MarkdownIt from 'markdown-it'
-import hljs from 'highlight.js'
-import 'highlight.js/styles/github.css'
+import { highlightCode } from '@/utils/codeHighlight'
 
 const route = useRoute()
 const router = useRouter()
@@ -242,19 +241,7 @@ const md = new MarkdownIt({
   html: true,
   linkify: true,
   typographer: true,
-  highlight: function (str: string, lang: string) {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        const highlighted = hljs.highlight(str, { language: lang, ignoreIllegals: true }).value
-        return `<pre class="hljs"><code>${highlighted}</code></pre>`
-      } catch {
-        // fallback
-      }
-    }
-    // 无语言或高亮失败时，转义 HTML 后原样输出
-    const escaped = md.utils.escapeHtml(str)
-    return `<pre class="hljs"><code>${escaped}</code></pre>`
-  }
+  highlight: highlightCode,
 })
 
 /**

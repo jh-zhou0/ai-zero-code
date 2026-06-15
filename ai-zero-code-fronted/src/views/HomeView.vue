@@ -255,7 +255,7 @@ async function loadMyApps() {
     })
     if (res.data?.code === 0 && res.data?.data) {
       myApps.value = res.data.data.records || []
-      myTotal.value = res.data.data.totalRow || 0
+      myTotal.value = Number(res.data.data.totalRow) || 0
     }
   } catch {
     message.error('获取我的应用列表失败')
@@ -287,7 +287,7 @@ async function loadGoodApps() {
     })
     if (res.data?.code === 0 && res.data?.data) {
       goodApps.value = res.data.data.records || []
-      goodTotal.value = res.data.data.totalRow || 0
+      goodTotal.value = Number(res.data.data.totalRow) || 0
     }
   } catch {
     message.error('获取精选应用列表失败')

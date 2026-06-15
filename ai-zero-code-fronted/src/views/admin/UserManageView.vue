@@ -274,7 +274,7 @@ async function loadUserList() {
     })
     if (res.data?.code === 0 && res.data?.data) {
       userList.value = res.data.data.records || []
-      pagination.total = res.data.data.totalRow || 0
+      pagination.total = Number(res.data.data.totalRow) || 0
     } else {
       message.error(res.data?.message || '获取用户列表失败')
     }

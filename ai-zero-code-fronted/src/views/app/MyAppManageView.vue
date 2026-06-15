@@ -208,7 +208,7 @@ async function loadAppList() {
     })
     if (res.data?.code === 0 && res.data?.data) {
       appList.value = res.data.data.records || []
-      pagination.total = res.data.data.totalRow || 0
+      pagination.total = Number(res.data.data.totalRow) || 0
     } else {
       message.error(res.data?.message || '获取应用列表失败')
     }

@@ -67,7 +67,7 @@ const router = createRouter({
  * 全局路由守卫：权限检查
  * 每次切换路由前，检查当前用户是否有权访问目标页面
  */
-router.beforeEach(async (to, _from, next) => {
+router.beforeEach(async (to, _from) => {
   const userStore = useUserStore()
 
   // 如果用户信息尚未加载，则尝试获取
@@ -80,15 +80,13 @@ router.beforeEach(async (to, _from, next) => {
   if (!hasAccess) {
     // 未登录 -> 跳转登录页
     if (!userStore.isLoggedIn) {
-      next({ name: 'userLogin' })
-    } else {
-      // 已登录但权限不足 -> 跳转首页
-      next({ name: 'home' })
+      return { name: 'userLogin' }
     }
-    return
+    // 已登录但权限不足 -> 跳转首页
+    return { name: 'home' }
   }
 
-  next()
+  return true
 })
 
 export default router
