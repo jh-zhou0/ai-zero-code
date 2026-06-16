@@ -25,7 +25,7 @@ function safeJsonParse(text: string) {
 
 // 创建 Axios 实例
 const myAxios = axios.create({
-  baseURL: 'http://localhost:8123/api',
+  baseURL: import.meta.env.VITE_APP_API_BASE_URL,
   timeout: 60000,
   withCredentials: true,
   // 自定义响应数据转换，解决大整数精度问题
