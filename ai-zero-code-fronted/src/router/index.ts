@@ -71,7 +71,7 @@ router.beforeEach(async (to, _from) => {
   const userStore = useUserStore()
 
   // 如果用户信息尚未加载，则尝试获取
-  if (!userStore.isLoggedIn && to.meta?.access !== AccessEnum.PUBLIC) {
+  if (!userStore.isLoggedIn) {
     await userStore.fetchCurrentUser()
   }
 
