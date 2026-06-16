@@ -4,20 +4,26 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.zjh.aizerocode.ai.enums.CodeGenTypeEnum;
 import org.zjh.aizerocode.ai.enums.StreamMessageTypeEnum;
 import org.zjh.aizerocode.ai.message.AiResponseMessage;
 import org.zjh.aizerocode.ai.message.StreamMessage;
 import org.zjh.aizerocode.ai.message.ToolExecutedMessage;
 import org.zjh.aizerocode.ai.message.ToolRequestMessage;
+import org.zjh.aizerocode.core.builder.VueProjectBuilder;
 import org.zjh.aizerocode.model.entity.User;
 import org.zjh.aizerocode.model.enums.ChatHistoryMessageTypeEnum;
 import org.zjh.aizerocode.service.ChatHistoryService;
 import reactor.core.publisher.Flux;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
+
+import static org.zjh.aizerocode.constant.AppConstant.FILE_SAVE_ROOT_DIR;
 
 /**
  * JSON 消息流处理器
@@ -26,6 +32,9 @@ import java.util.Set;
 @Slf4j
 @Component
 public class JsonMessageStreamHandler {
+
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
 
     /**
      * 处理 TokenStream（VUE_PROJECT）
@@ -39,7 +48,7 @@ public class JsonMessageStreamHandler {
      */
     public Flux<String> handle(Flux<String> originFlux,
                                ChatHistoryService chatHistoryService,
-                               long appId, User loginUser) {
+                               long appId, User loginUser, CodeGenTypeEnum codeGenType) {
         // 收集数据用于生成后端记忆格式
         StringBuilder chatHistoryStringBuilder = new StringBuilder();
         // 用于跟踪已经见过的工具ID，判断是否是第一次调用
@@ -54,6 +63,9 @@ public class JsonMessageStreamHandler {
                     // 流式响应完成后，添加 AI 消息到对话历史
                     String aiResponse = chatHistoryStringBuilder.toString();
                     chatHistoryService.addChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+                    // 异步构建Vue项目
+                    String projectPath = FILE_SAVE_ROOT_DIR + File.separator + codeGenType.getValue() + StrUtil.UNDERLINE + appId;
+                    vueProjectBuilder.buildAsync(projectPath);
                 })
                 .doOnError(error -> {
                     // 如果AI回复失败，也要记录错误消息

@@ -41,7 +41,7 @@ public class StreamHandlerExecutor {
                                   long appId, User loginUser, CodeGenTypeEnum codeGenType) {
         return switch (codeGenType) {
             case VUE_PROJECT -> // 使用注入的组件实例
-                    jsonMessageStreamHandler.handle(originFlux, chatHistoryService, appId, loginUser);
+                    jsonMessageStreamHandler.handle(originFlux, chatHistoryService, appId, loginUser, codeGenType);
             case HTML, MULTI_FILE -> // 简单文本处理器不需要依赖注入
                     simpleTextStreamHandler.handle(originFlux, chatHistoryService, appId, loginUser);
             default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成类型");

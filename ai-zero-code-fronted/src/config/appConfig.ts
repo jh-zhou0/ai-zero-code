@@ -3,6 +3,8 @@
  * 统一管理环境变量和配置项
  */
 
+import { CodeGenTypeEnum } from '@/constants/codeGenType.ts'
+
 /**
  * 获取部署基础URL（已部署应用的访问地址）
  */
@@ -38,7 +40,11 @@ export const buildDeployUrl = (deployKey: string): string => {
 export const buildPreviewUrl = (codeGenType: string, appId: string | number): string => {
   if (!codeGenType || !appId) return ''
   const baseUrl = getPreviewBaseUrl()
-  return `${baseUrl.replace(/\/$/, '')}/api/static/${codeGenType}_${appId}/`
+  const previewUrl = `${baseUrl.replace(/\/$/, '')}/api/static/${codeGenType}_${appId}/`
+  if (codeGenType === CodeGenTypeEnum.VUE_PROJECT.value) {
+    return `${baseUrl}/dist/index.html`
+  }
+  return previewUrl
 }
 
 /**

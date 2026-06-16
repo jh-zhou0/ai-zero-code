@@ -12,8 +12,8 @@ export const CodeGenTypeEnum = {
     label: '原生多文件模式',
   },
   VUE_PROJECT: {
-    value: 'Vue 工程模式',
-    label: 'vue_project'
+    value: 'vue_project',
+    label: 'Vue 工程模式'
   },
 } as const
 

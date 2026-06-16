@@ -13,6 +13,7 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import org.zjh.aizerocode.ai.enums.CodeGenTypeEnum;
 import org.zjh.aizerocode.core.AiCodeGeneratorFacade;
+import org.zjh.aizerocode.core.builder.VueProjectBuilder;
 import org.zjh.aizerocode.core.handler.StreamHandlerExecutor;
 import org.zjh.aizerocode.exception.BusinessException;
 import org.zjh.aizerocode.exception.ErrorCode;
@@ -61,6 +62,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     @Resource
     private StreamHandlerExecutor streamHandlerExecutor;
 
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
+
     @Override
     public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
         // 1. 参数校验
@@ -107,12 +111,24 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         // 5. 获取代码生成类型，构建源目录路径
         String codeGenType = app.getCodeGenType();
-        String sourceDirName = codeGenType + "_" + appId;
+        String sourceDirName = codeGenType + StrUtil.UNDERLINE + appId;
         String sourceDirPath = FILE_SAVE_ROOT_DIR + File.separator + sourceDirName;
         // 6. 检查源目录是否存在
         File sourceDir = new File(sourceDirPath);
         if (!sourceDir.exists() || !sourceDir.isDirectory()) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "应用代码不存在，请先生成代码");
+        }
+        // 6.1 Vue 项目特殊处理
+        if (CodeGenTypeEnum.VUE_PROJECT.getValue().equals(codeGenType)) {
+            // Vue 项目构建
+            boolean buildResult = vueProjectBuilder.build(sourceDirPath);
+            ThrowUtils.throwIf(!buildResult, ErrorCode.SYSTEM_ERROR, "构建 Vue 项目失败，请检查代码和依赖");
+            // 检查 dist 目录是否存在
+            File distDir = new File(sourceDirPath + File.separator + "dist");
+            ThrowUtils.throwIf(!distDir.exists() || !distDir.isDirectory(), ErrorCode.SYSTEM_ERROR, "构建 Vue 项目完成，但未生成 dist 目录");
+            // 将 dist 目录作为部署源
+            sourceDir = distDir;
+            log.info("Vue 项目构建完成，dist 目录: {}", distDir.getAbsolutePath());
         }
         // 7. 复制文件到部署目录
         String deployDirPath = FILE_DEPLOY_ROOT_DIR + File.separator + deployKey;
