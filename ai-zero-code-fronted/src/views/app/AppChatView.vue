@@ -10,6 +10,15 @@
       </div>
       <div class="header-right">
         <a-button
+          type="default"
+          :loading="downloading"
+          :disabled="!codeGenType || !hasGeneratedCode || !canDownload"
+          @click="handleDownloadCode"
+        >
+          <download-outlined />
+          下载代码
+        </a-button>
+        <a-button
           type="primary"
           :loading="deploying"
           :disabled="!codeGenType"
@@ -167,12 +176,13 @@
 import { ref, onMounted, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { ArrowLeftOutlined, CloudUploadOutlined, EditOutlined } from '@ant-design/icons-vue'
+import { ArrowLeftOutlined, CloudUploadOutlined, DownloadOutlined, EditOutlined } from '@ant-design/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { getAppVoById, deployApp } from '@/api/appController'
 import { listAppChatHistory } from '@/api/chatHistoryController'
 import AppPreview from '@/components/AppPreview.vue'
 import { getApiBaseUrl } from '@/config/appConfig'
+import myAxios from '@/request'
 import MarkdownIt from 'markdown-it'
 import { highlightCode } from '@/utils/codeHighlight'
 
@@ -211,6 +221,9 @@ const sseFinished = ref(false)
 // 部署
 const deploying = ref(false)
 
+// 下载代码
+const downloading = ref(false)
+
 /**
  * 是否展示预览：
  * 1. 当前会话已生成代码（hasGeneratedCode）
@@ -228,6 +241,13 @@ const shouldShowPreview = computed(() => {
 const isOwnApp = computed(() => {
   if (!appInfo.value?.userId || !userStore.currentUser?.id) return false
   return appInfo.value.userId === userStore.currentUser.id
+})
+
+/**
+ * 是否有权限下载代码：应用创建者本人 或 管理员
+ */
+const canDownload = computed(() => {
+  return isOwnApp.value || userStore.isAdmin
 })
 
 /**
@@ -455,6 +475,53 @@ function handleSend() {
   const text = userInput.value.trim()
   if (!text || aiThinking.value) return
   sendMessage(text)
+}
+
+/**
+ * 下载应用代码
+ */
+async function handleDownloadCode() {
+  if (!appIdStr.value) return
+  downloading.value = true
+  try {
+    const response = await myAxios.get(`/app/download/${appIdStr.value}`, {
+      responseType: 'blob',
+    })
+
+    // 从 Content-Disposition 响应头中提取文件名
+    const contentDisposition = response.headers?.['content-disposition']
+    let filename = `app_${appIdStr.value}.zip`
+    if (contentDisposition) {
+      // 优先匹配 RFC 5987 格式 (filename*=UTF-8''%E4%B8%AD%E6%96%87.zip)
+      const rfc5987Match = contentDisposition.match(/filename\*=(?:UTF-8\'\')?(.+?)(?:;|$)/i)
+      if (rfc5987Match) {
+        filename = decodeURIComponent(rfc5987Match[1].trim())
+      } else {
+        // 回退匹配标准格式 (filename="xxx.zip")
+        const standardMatch = contentDisposition.match(/filename="?([^";]+)"?/i)
+        if (standardMatch) {
+          filename = standardMatch[1].trim()
+        }
+      }
+    }
+
+    // 创建 Blob URL 并触发下载
+    const blob = new Blob([response.data], { type: 'application/zip' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    message.success('代码下载成功')
+  } catch {
+    message.error('下载代码失败')
+  } finally {
+    downloading.value = false
+  }
 }
 
 /**
