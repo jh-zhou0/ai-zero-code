@@ -88,6 +88,10 @@
         <a-form-item label="应用名称" name="appName">
           <a-input v-model:value="modalForm.appName" placeholder="请输入应用名称" />
         </a-form-item>
+        <a-form-item label="生成类型">
+          <a-tag v-if="editingRecord?.codeGenType" color="blue">{{ getCodeGenTypeLabel(editingRecord.codeGenType) }}</a-tag>
+          <span v-else class="no-data">-</span>
+        </a-form-item>
       </a-form>
     </a-modal>
   </div>

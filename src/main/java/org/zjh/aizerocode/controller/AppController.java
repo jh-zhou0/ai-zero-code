@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
-import org.zjh.aizerocode.ai.enums.CodeGenTypeEnum;
 import org.zjh.aizerocode.annotation.AuthCheck;
 import org.zjh.aizerocode.common.BaseResponse;
 import org.zjh.aizerocode.common.DeleteRequest;
@@ -54,6 +53,9 @@ public class AppController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private ProjectDownloadService projectDownloadService;
 
     /**
      * 应用聊天生成代码（流式 SSE）
@@ -125,9 +127,6 @@ public class AppController {
         return ResultUtils.success(deployUrl);
     }
 
-    @Resource
-    private ProjectDownloadService projectDownloadService;
-
     /**
      * 下载应用代码
      *
@@ -163,7 +162,6 @@ public class AppController {
         projectDownloadService.downloadProjectAsZip(sourceDirPath, downloadFileName, response);
     }
 
-
     /**
      * 创建应用
      *
@@ -179,17 +177,8 @@ public class AppController {
         // 获取当前登录用户
         User loginUser = userService.getLoginUser(request);
         // 构造入库对象
-        App app = new App();
-        BeanUtil.copyProperties(appAddRequest, app);
-        app.setUserId(loginUser.getId());
-        // 应用名称暂时为 initPrompt 前 12 位
-        app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
-        // 暂时设置为多文件生成
-        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
-        // 插入数据库
-        boolean result = appService.save(app);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
-        return ResultUtils.success(app.getId());
+        Long appId = appService.createApp(appAddRequest, loginUser);
+        return ResultUtils.success(appId);
     }
 
     /**

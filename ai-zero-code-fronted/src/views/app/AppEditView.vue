@@ -18,6 +18,11 @@
             />
           </a-form-item>
 
+          <a-form-item label="生成类型">
+            <a-tag v-if="codeGenType" color="blue">{{ getCodeGenTypeLabel(codeGenType) }}</a-tag>
+            <span v-else class="no-data">-</span>
+          </a-form-item>
+
           <!-- 管理员可见：应用封面 -->
           <a-form-item label="应用封面" name="cover" v-if="userStore.isAdmin">
             <a-input
@@ -65,6 +70,7 @@ import {
   getAppVoByIdByAdmin,
   updateAppByAdmin,
 } from '@/api/appController'
+import { getCodeGenTypeLabel } from '@/constants/codeGenType'
 
 const route = useRoute()
 const router = useRouter()
@@ -84,6 +90,8 @@ const formState = ref<{
   cover: undefined,
   priority: undefined,
 })
+
+const codeGenType = ref<string | undefined>(undefined)
 
 const rules = {
   appName: [
@@ -122,6 +130,7 @@ function fillForm(data: API.AppVO) {
     cover: data.cover,
     priority: data.priority,
   }
+  codeGenType.value = data.codeGenType
 }
 
 async function handleSubmit() {

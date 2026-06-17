@@ -117,6 +117,10 @@
         <a-form-item label="应用封面" name="cover">
           <a-input v-model:value="modalForm.cover" placeholder="请输入封面 URL" />
         </a-form-item>
+        <a-form-item label="生成类型">
+          <a-tag v-if="editingRecord?.codeGenType" color="blue">{{ getCodeGenTypeLabel(editingRecord.codeGenType) }}</a-tag>
+          <span v-else class="no-data">-</span>
+        </a-form-item>
         <a-form-item label="优先级" name="priority">
           <a-input-number
             v-model:value="modalForm.priority"

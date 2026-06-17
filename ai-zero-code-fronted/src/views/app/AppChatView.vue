@@ -7,6 +7,7 @@
           <arrow-left-outlined />
         </a-button>
         <span class="app-name">{{ appInfo?.appName || '应用加载中...' }}</span>
+        <a-tag v-if="codeGenType" color="blue" class="gen-type-tag">{{ getCodeGenTypeLabel(codeGenType) }}</a-tag>
       </div>
       <div class="header-right">
         <a-button
@@ -183,6 +184,7 @@ import { listAppChatHistory } from '@/api/chatHistoryController'
 import AppPreview from '@/components/AppPreview.vue'
 import { getApiBaseUrl } from '@/config/appConfig'
 import myAxios from '@/request'
+import { getCodeGenTypeLabel } from '@/constants/codeGenType'
 import MarkdownIt from 'markdown-it'
 import { highlightCode } from '@/utils/codeHighlight'
 

@@ -2,6 +2,7 @@ package org.zjh.aizerocode.service;
 
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import org.zjh.aizerocode.model.dto.AppAddRequest;
 import org.zjh.aizerocode.model.dto.AppQueryRequest;
 import org.zjh.aizerocode.model.entity.App;
 import org.zjh.aizerocode.model.entity.User;
@@ -43,6 +44,15 @@ public interface AppService extends IService<App> {
      * @param appUrl 应用URL
      */
     void generateAppScreenshotAsync(Long appId, String appUrl);
+
+    /**
+     * 创建应用。
+     *
+     * @param appAddRequest 应用添加请求
+     * @param loginUser 登录用户
+     * @return 应用ID
+     */
+    Long createApp(AppAddRequest appAddRequest, User loginUser);
 
     /**
      * 获取应用视图对象。
