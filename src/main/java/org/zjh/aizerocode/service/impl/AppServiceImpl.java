@@ -27,6 +27,7 @@ import org.zjh.aizerocode.model.vo.AppVO;
 import org.zjh.aizerocode.model.vo.UserVO;
 import org.zjh.aizerocode.service.AppService;
 import org.zjh.aizerocode.service.ChatHistoryService;
+import org.zjh.aizerocode.service.ScreenshotService;
 import org.zjh.aizerocode.service.UserService;
 import reactor.core.publisher.Flux;
 
@@ -64,6 +65,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private VueProjectBuilder vueProjectBuilder;
+
+    @Resource
+    private ScreenshotService screenshotService;
 
     @Override
     public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
@@ -144,10 +148,33 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         updateApp.setDeployedTime(LocalDateTime.now());
         boolean updateResult = this.updateById(updateApp);
         ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
-        // 9. 返回可访问的 URL
-        return String.format("%s/%s/", APP_DEPLOY_DOMAIN, deployKey);
+        // 9. 构建 APP 访问的 URL
+        String appDeployUrl = String.format("%s/%s/", APP_DEPLOY_DOMAIN, deployKey);
+        // 10. 异步生成截图并保存封面
+        generateAppScreenshotAsync(appId, appDeployUrl);
+        return appDeployUrl;
     }
 
+    /**
+     * 异步生成应用截图并更新封面
+     *
+     * @param appId  应用ID
+     * @param appUrl 应用访问URL
+     */
+    @Override
+    public void generateAppScreenshotAsync(Long appId, String appUrl) {
+        // 使用虚拟线程异步执行
+        Thread.startVirtualThread(() -> {
+            // 调用截图服务生成截图并上传
+            String screenshotUrl = screenshotService.generateAndUploadScreenshot(appUrl);
+            // 更新应用封面字段
+            App updateApp = new App();
+            updateApp.setId(appId);
+            updateApp.setCover(screenshotUrl);
+            boolean updated = this.updateById(updateApp);
+            ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR, "更新应用封面字段失败");
+        });
+    }
 
     @Override
     public AppVO getAppVO(App app) {
