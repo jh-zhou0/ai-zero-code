@@ -110,13 +110,15 @@
           </a-alert>
           <div class="input-container">
             <a-textarea
+              ref="chatTextareaRef"
               v-model:value="userInput"
               placeholder="请描述你想生成的网站，越详细效果越好哦"
               :rows="2"
               :maxLength="2000"
-              @keydown="handleKeyDown"
+              @pressEnter="handlePressEnter"
+              @compositionstart="isComposing = true"
+              @compositionend="isComposing = false"
               class="chat-textarea"
-              :disabled="aiThinking"
             />
             <a-button
               type="primary"
@@ -253,6 +255,9 @@ const appInfo = ref<API.AppVO | null>(null)
 const messages = ref<{ role: string; content: string; key: string; isCurrentSession: boolean }[]>([])
 let msgKeyCounter = 0
 const userInput = ref('')
+const chatTextareaRef = ref<{
+  resizableTextArea?: { textArea?: HTMLTextAreaElement }
+} | null>(null)
 const aiThinking = ref(false)
 const messageListRef = ref<HTMLElement | null>(null)
 
@@ -290,6 +295,9 @@ const {
   setupMessageListener,
   teardownMessageListener,
 } = useVisualEdit()
+
+// 中文输入法（IME）合成输入状态
+const isComposing = ref(false)
 
 // 部署成功弹框
 const deployModalVisible = ref(false)
@@ -513,30 +521,45 @@ function sendMessage(messageText: string) {
     scrollToBottom()
   }
 
-  // 处理 done 事件 - 后端通过 .event("done") 发送
-  eventSource.addEventListener('done', async () => {
+  /**
+   * SSE 流结束后的统一收尾：刷新应用信息并更新右侧预览
+   */
+  async function finishGeneration() {
     if (sseFinished.value) return
     sseFinished.value = true
-    eventSource.close()
-    // 刷新应用信息（获取 deployKey 等）
     await loadAppInfo()
-    // 标记代码已生成完成，右侧显示预览
     hasGeneratedCode.value = true
     aiThinking.value = false
-    message.success('网站生成完成！')
+    nextTick(() => {
+      const preview = appPreviewRef.value || appPreviewEmptyRef.value
+      preview?.refreshIframe()
+    })
     scrollToBottom()
+  }
+
+  // 处理 done 事件 - 后端通过 .event("done") 发送
+  eventSource.addEventListener('done', async () => {
+    eventSource.close()
+    await finishGeneration()
+    message.success('网站生成完成！')
   })
 
   eventSource.onerror = async () => {
     if (sseFinished.value) return
-    sseFinished.value = true
     eventSource.close()
+
+    const lastMsg = messages.value[messages.value.length - 1]
+    const hasAiContent = lastMsg?.role === 'ai' && !!lastMsg.content
+
+    // 未收到 done 事件但已有 AI 回复内容时，仍视为生成成功并刷新预览
+    if (hasAiContent) {
+      await finishGeneration()
+      return
+    }
+
+    sseFinished.value = true
     if (aiThinking.value) {
-      // 由于 EventSource 在 done 后也会触发 onerror，此时 sseFinished 已为 true 不会重复进入
-      // 如果内容为空，移除占位
-      const lastMsgIndex = messages.value.length - 1
-      const lastMsg = messages.value[lastMsgIndex]
-      if (lastMsg && lastMsg.role === 'ai' && !lastMsg.content) {
+      if (lastMsg?.role === 'ai' && !lastMsg.content) {
         messages.value.pop()
       }
       aiThinking.value = false
@@ -546,15 +569,34 @@ function sendMessage(messageText: string) {
 }
 
 /**
- * 键盘按下事件处理：
- * Enter = 发送消息，Shift+Enter = 换行（聊天场景标准交互）
- * 使用 keydown + preventDefault 避免发送后输入框残留换行符
+ * 获取 Ant Design TextArea 内部原生 textarea 元素
  */
-function handleKeyDown(e: KeyboardEvent) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault()
-    handleSend()
+function getNativeTextarea(): HTMLTextAreaElement | undefined {
+  const resizable = chatTextareaRef.value?.resizableTextArea as
+    | { textArea?: HTMLTextAreaElement; value?: { textArea?: HTMLTextAreaElement } }
+    | undefined
+  if (!resizable) return undefined
+  return resizable.textArea ?? resizable.value?.textArea
+}
+
+/**
+ * 清空聊天输入框（同步清空 v-model 与原生 textarea，避免 Ant Design TextArea 状态残留）
+ */
+function clearChatInput() {
+  userInput.value = ''
+  const nativeEl = getNativeTextarea()
+  if (nativeEl) {
+    nativeEl.value = ''
   }
+}
+
+/**
+ * Enter 发送消息，Shift+Enter 换行
+ */
+function handlePressEnter(e: KeyboardEvent) {
+  if (e.shiftKey || isComposing.value) return
+  e.preventDefault()
+  handleSend()
 }
 
 /**
@@ -567,16 +609,18 @@ function handleSend() {
   // 拼接选中元素信息到提示词
   const elementSuffix = getElementPromptSuffix()
   const finalText = text + elementSuffix
+  const shouldClearSelection = !!selectedElement.value
 
-  // 先清空输入框，确保 UI 即时响应
-  userInput.value = ''
-
-  // 发送后退出编辑模式并清除选中元素
-  if (isEditMode.value) {
-    exitEditMode()
-  }
-
+  clearChatInput()
   sendMessage(finalText)
+
+  // nextTick 再次清空，防止 Enter 触发的 input 事件把旧值写回
+  nextTick(() => {
+    clearChatInput()
+    if (shouldClearSelection) {
+      removeSelectedElement()
+    }
+  })
 }
 
 /**

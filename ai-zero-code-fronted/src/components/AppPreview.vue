@@ -111,8 +111,18 @@ function handleIframeLoad() {
   }
 }
 
-/** 暴露 iframe ref 供父组件使用 */
-defineExpose({ iframeRef })
+/**
+ * 刷新 iframe 页面（用于 AI 重新生成代码后刷新预览）
+ * 通过更新 src 加时间戳绕过缓存，跨域场景下比 location.reload() 更可靠
+ */
+function refreshIframe() {
+  if (!iframeRef.value || !previewUrl.value) return
+  const baseUrl = previewUrl.value.split('?')[0]
+  iframeRef.value.src = `${baseUrl}?_t=${Date.now()}`
+}
+
+/** 暴露 iframe ref 和刷新方法供父组件使用 */
+defineExpose({ iframeRef, refreshIframe })
 </script>
 
 <style scoped>
