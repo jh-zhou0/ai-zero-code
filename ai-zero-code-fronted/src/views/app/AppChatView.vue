@@ -65,14 +65,14 @@
               <a-avatar
                 v-if="msg.role === 'user'"
                 :size="36"
-                style="backgroundColor: #1890ff; flexShrink: 0;"
+                style="background-color: #1890ff; flex-shrink: 0;"
               >
                 {{ userStore.currentUser?.userName?.charAt(0) || 'U' }}
               </a-avatar>
               <a-avatar
                 v-else
                 :size="36"
-                style="backgroundColor: #52c41a; flexShrink: 0;"
+                style="background-color: #52c41a; flex-shrink: 0;"
               >
                 AI
               </a-avatar>

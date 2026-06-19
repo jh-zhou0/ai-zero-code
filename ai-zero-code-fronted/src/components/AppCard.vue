@@ -29,7 +29,7 @@
         <a-avatar
           :size="48"
           :src="app.user?.userAvatar"
-          style="backgroundColor: #1890ff;"
+          style="background-color: #1890ff;"
         >
           {{ (app.user?.userName || app.user?.userAccount || 'U').charAt(0) }}
         </a-avatar>
