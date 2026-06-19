@@ -114,7 +114,7 @@
               placeholder="请描述你想生成的网站，越详细效果越好哦"
               :rows="2"
               :maxLength="2000"
-              @press-enter="handleSend"
+              @keydown="handleKeyDown"
               class="chat-textarea"
               :disabled="aiThinking"
             />
@@ -473,7 +473,6 @@ function sendMessage(messageText: string) {
     key: `session-${msgKeyCounter++}`,
     isCurrentSession: true,
   })
-  userInput.value = ''
   aiThinking.value = true
   sseFinished.value = false
 
@@ -547,6 +546,18 @@ function sendMessage(messageText: string) {
 }
 
 /**
+ * 键盘按下事件处理：
+ * Enter = 发送消息，Shift+Enter = 换行（聊天场景标准交互）
+ * 使用 keydown + preventDefault 避免发送后输入框残留换行符
+ */
+function handleKeyDown(e: KeyboardEvent) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
+    handleSend()
+  }
+}
+
+/**
  * 发送消息
  */
 function handleSend() {
@@ -556,6 +567,9 @@ function handleSend() {
   // 拼接选中元素信息到提示词
   const elementSuffix = getElementPromptSuffix()
   const finalText = text + elementSuffix
+
+  // 先清空输入框，确保 UI 即时响应
+  userInput.value = ''
 
   // 发送后退出编辑模式并清除选中元素
   if (isEditMode.value) {
