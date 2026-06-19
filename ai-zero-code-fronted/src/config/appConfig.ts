@@ -15,8 +15,8 @@ export const getDeployBaseUrl = (): string => {
 /**
  * 获取预览基础URL（未部署应用的静态资源地址）
  */
-export const getPreviewBaseUrl = (): string => {
-  return import.meta.env.VITE_APP_PREVIEW_BASE_URL || 'http://localhost:8123'
+export const getApiBaseUrl = (): string => {
+  return import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:8123/api'
 }
 
 /**
@@ -39,18 +39,10 @@ export const buildDeployUrl = (deployKey: string): string => {
  */
 export const buildPreviewUrl = (codeGenType: string, appId: string | number): string => {
   if (!codeGenType || !appId) return ''
-  const baseUrl = getPreviewBaseUrl()
-  const previewUrl = `${baseUrl.replace(/\/$/, '')}/api/static/${codeGenType}_${appId}/`
+  const baseUrl = getApiBaseUrl()
+  const previewUrl = `${baseUrl.replace(/\/$/, '')}/static/${codeGenType}_${appId}/`
   if (codeGenType === CodeGenTypeEnum.VUE_PROJECT.value) {
     return `${baseUrl}/dist/index.html`
   }
   return previewUrl
-}
-
-/**
- * 构建API基础URL
- * @returns API基础URL
- */
-export const getApiBaseUrl = (): string => {
-  return `${getPreviewBaseUrl()}/api`
 }
