@@ -13,7 +13,7 @@
         <a-button
           type="default"
           :loading="downloading"
-          :disabled="!codeGenType || !hasGeneratedCode || !canDownload"
+          :disabled="!codeGenType || !isCodeGenerated || !canDownload"
           @click="handleDownloadCode"
         >
           <download-outlined />
@@ -171,13 +171,33 @@
       </div>
     </div>
   </div>
+
+  <!-- 部署成功弹框 -->
+  <a-modal
+    v-model:visible="deployModalVisible"
+    title="部署成功"
+    :footer="null"
+    :closable="true"
+  >
+    <div style="display: flex; align-items: center; gap: 8px; padding: 8px 0;">
+      <a-input
+        :value="deployUrl"
+        readonly
+        style="flex: 1;"
+      />
+      <a-button type="primary" @click="copyDeployUrl">
+        <copy-outlined />
+        复制链接
+      </a-button>
+    </div>
+  </a-modal>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { ArrowLeftOutlined, CloudUploadOutlined, DownloadOutlined, EditOutlined } from '@ant-design/icons-vue'
+import { ArrowLeftOutlined, CloudUploadOutlined, DownloadOutlined, EditOutlined, CopyOutlined } from '@ant-design/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { getAppVoById, deployApp } from '@/api/appController'
 import { listAppChatHistory } from '@/api/chatHistoryController'
@@ -226,6 +246,10 @@ const deploying = ref(false)
 // 下载代码
 const downloading = ref(false)
 
+// 部署成功弹框
+const deployModalVisible = ref(false)
+const deployUrl = ref('')
+
 /**
  * 是否展示预览：
  * 1. 当前会话已生成代码（hasGeneratedCode）
@@ -234,6 +258,13 @@ const downloading = ref(false)
  */
 const shouldShowPreview = computed(() => {
   if (!codeGenType.value) return false
+  return hasGeneratedCode.value || !!deployKey.value || chatHistoryTotal.value >= 2
+})
+
+/**
+ * 代码是否已生成（当前会话生成完成 或 历史已有生成记录 或 已部署）
+ */
+const isCodeGenerated = computed(() => {
   return hasGeneratedCode.value || !!deployKey.value || chatHistoryTotal.value >= 2
 })
 
@@ -535,7 +566,8 @@ async function handleDeploy() {
   try {
     const res = await deployApp({ appId: appIdStr.value as unknown as number })
     if (res.data?.code === 0 && res.data?.data) {
-      message.success(`部署成功！访问地址：${res.data.data}`)
+      deployUrl.value = res.data.data
+      deployModalVisible.value = true
       // 刷新应用信息以获取 deployKey
       await loadAppInfo()
     } else {
@@ -546,6 +578,11 @@ async function handleDeploy() {
   } finally {
     deploying.value = false
   }
+}
+
+function copyDeployUrl() {
+  navigator.clipboard.writeText(deployUrl.value)
+  message.success('链接已复制')
 }
 
 function goBack() {
