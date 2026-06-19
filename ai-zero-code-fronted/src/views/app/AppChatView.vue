@@ -492,6 +492,8 @@ function sendMessage(messageText: string) {
     isCurrentSession: true,
   })
 
+  scrollToBottom()
+
   // 使用 EventSource 连接 SSE
   const baseUrl = getApiBaseUrl()
   const url = `${baseUrl}/app/chat/gen/code?appId=${appIdStr.value}&message=${encodeURIComponent(messageText)}`
@@ -620,6 +622,7 @@ function handleSend() {
     if (shouldClearSelection) {
       removeSelectedElement()
     }
+    scrollToBottom()
   })
 }
 
@@ -708,9 +711,12 @@ function goEdit() {
 
 function scrollToBottom() {
   nextTick(() => {
-    if (messageListRef.value) {
-      messageListRef.value.scrollTop = messageListRef.value.scrollHeight
-    }
+    requestAnimationFrame(() => {
+      const el = messageListRef.value
+      if (el) {
+        el.scrollTop = el.scrollHeight
+      }
+    })
   })
 }
 

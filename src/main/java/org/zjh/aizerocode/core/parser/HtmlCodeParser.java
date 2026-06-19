@@ -22,8 +22,6 @@ public class HtmlCodeParser implements CodeParser<HtmlCodeResult> {
         String htmlCode = extractHtmlCode(codeContent);
         if (StrUtil.isNotBlank(htmlCode)) {
             htmlCodeResult.setHtmlCode(htmlCode.trim());
-        } else {
-            htmlCodeResult.setHtmlCode(codeContent.trim());
         }
         return htmlCodeResult;
     }
