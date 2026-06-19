@@ -89,6 +89,25 @@
           </div>
         </div>
         <div class="chat-input-area">
+          <!-- 选中元素提示 -->
+          <a-alert
+            v-if="selectedElement"
+            type="info"
+            show-icon
+            closable
+            class="selected-element-alert"
+            @close="removeSelectedElement"
+          >
+            <template #message>
+              <span class="alert-label">已选中元素：</span>
+              <span class="alert-detail">
+                &lt;{{ selectedElement.tag }}&gt;
+                <template v-if="selectedElement.id"> #{{ selectedElement.id }}</template>
+                <template v-if="selectedElement.className"> .{{ selectedElement.className.split(' ')[0] }}</template>
+              </span>
+              <span v-if="selectedElement.text" class="alert-text">“{{ selectedElement.text.substring(0, 30) }}{{ selectedElement.text.length > 30 ? '...' : '' }}”</span>
+            </template>
+          </a-alert>
           <div class="input-container">
             <a-textarea
               v-model:value="userInput"
@@ -122,11 +141,16 @@
       <div class="chat-right">
         <!-- 代码已生成完成 → 展示预览 -->
         <AppPreview
+          ref="appPreviewRef"
           v-if="shouldShowPreview && codeGenType"
           :deploy-key="deployKey"
           :app-id="appIdStr"
           :code-gen-type="codeGenType"
+          :show-edit-btn="true"
+          :edit-mode="isEditMode"
           empty-text="暂无预览"
+          @toggle-edit="handleToggleEdit"
+          @iframe-load="handleIframeLoad"
         />
         <!-- 正在生成应用 → 展示加载动画 -->
         <div v-else-if="aiThinking" class="generating-wrapper">
@@ -162,11 +186,16 @@
         </div>
         <!-- 默认空状态 -->
         <AppPreview
+          ref="appPreviewEmptyRef"
           v-else
           :deploy-key="deployKey"
           :app-id="appIdStr"
           :code-gen-type="codeGenType"
+          :show-edit-btn="true"
+          :edit-mode="isEditMode"
           empty-text="暂无预览"
+          @toggle-edit="handleToggleEdit"
+          @iframe-load="handleIframeLoad"
         />
       </div>
     </div>
@@ -194,7 +223,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { ArrowLeftOutlined, CloudUploadOutlined, DownloadOutlined, EditOutlined, CopyOutlined } from '@ant-design/icons-vue'
@@ -205,6 +234,7 @@ import AppPreview from '@/components/AppPreview.vue'
 import { getApiBaseUrl } from '@/config/appConfig'
 import myAxios from '@/request'
 import { getCodeGenTypeLabel } from '@/constants/codeGenType'
+import { useVisualEdit } from '@/composables/useVisualEdit'
 import MarkdownIt from 'markdown-it'
 import { highlightCode } from '@/utils/codeHighlight'
 
@@ -245,6 +275,21 @@ const deploying = ref(false)
 
 // 下载代码
 const downloading = ref(false)
+
+// 可视化编辑
+const appPreviewRef = ref<InstanceType<typeof AppPreview> | null>(null)
+const appPreviewEmptyRef = ref<InstanceType<typeof AppPreview> | null>(null)
+const {
+  isEditMode,
+  selectedElement,
+  enterEditMode,
+  exitEditMode,
+  removeSelectedElement,
+  getElementPromptSuffix,
+  injectIntoIframe,
+  setupMessageListener,
+  teardownMessageListener,
+} = useVisualEdit()
 
 // 部署成功弹框
 const deployModalVisible = ref(false)
@@ -507,7 +552,17 @@ function sendMessage(messageText: string) {
 function handleSend() {
   const text = userInput.value.trim()
   if (!text || aiThinking.value) return
-  sendMessage(text)
+
+  // 拼接选中元素信息到提示词
+  const elementSuffix = getElementPromptSuffix()
+  const finalText = text + elementSuffix
+
+  // 发送后退出编辑模式并清除选中元素
+  if (isEditMode.value) {
+    exitEditMode()
+  }
+
+  sendMessage(finalText)
 }
 
 /**
@@ -601,7 +656,31 @@ function scrollToBottom() {
   })
 }
 
+/**
+ * 切换可视化编辑模式
+ */
+function handleToggleEdit() {
+  if (isEditMode.value) {
+    exitEditMode()
+  } else {
+    // 获取当前 iframe 元素
+    const iframe = appPreviewRef.value?.iframeRef || appPreviewEmptyRef.value?.iframeRef || null
+    enterEditMode(iframe)
+  }
+}
+
+/**
+ * iframe 加载完成回调：如果处于编辑模式则重新注入脚本
+ */
+function handleIframeLoad(iframe: HTMLIFrameElement) {
+  if (isEditMode.value) {
+    injectIntoIframe(iframe)
+  }
+}
+
 onMounted(async () => {
+  // 设置可视化编辑消息监听
+  setupMessageListener()
   await loadAppInfo()
 
   // 1. 加载对话历史（游标分页，首次加载最近 10 条）
@@ -614,6 +693,13 @@ onMounted(async () => {
   if (isOwnApp.value && chatHistoryTotal.value === 0 && appInfo.value?.initPrompt) {
     console.log('自动发送初始消息：', appInfo.value.initPrompt)
     sendMessage(appInfo.value.initPrompt)
+  }
+})
+
+onBeforeUnmount(() => {
+  teardownMessageListener()
+  if (isEditMode.value) {
+    exitEditMode()
   }
 })
 </script>
@@ -790,6 +876,38 @@ onMounted(async () => {
   background: #fff;
   gap: 10px;
   align-items: flex-end;
+  flex-direction: column;
+}
+
+.selected-element-alert {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.selected-element-alert :deep(.ant-alert-message) {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.alert-label {
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.alert-detail {
+  color: #333;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-size: 12px;
+  background: rgba(24, 144, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin: 0 4px;
+}
+
+.alert-text {
+  color: #666;
+  font-style: italic;
+  margin-left: 4px;
 }
 
 .input-container {
