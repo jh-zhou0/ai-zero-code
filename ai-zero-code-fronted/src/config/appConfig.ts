@@ -9,14 +9,14 @@ import { CodeGenTypeEnum } from '@/constants/codeGenType.ts'
  * 获取部署基础URL（已部署应用的访问地址）
  */
 export const getDeployBaseUrl = (): string => {
-  return import.meta.env.VITE_APP_DEPLOY_BASE_URL || 'http://localhost:8080'
+  return import.meta.env.VITE_APP_DEPLOY_BASE_URL || '/deploy'
 }
 
 /**
  * 获取预览基础URL（未部署应用的静态资源地址）
  */
 export const getApiBaseUrl = (): string => {
-  return import.meta.env.VITE_APP_API_BASE_URL || 'http://localhost:8123/api'
+  return import.meta.env.VITE_APP_API_BASE_URL || '/api'
 }
 
 /**
