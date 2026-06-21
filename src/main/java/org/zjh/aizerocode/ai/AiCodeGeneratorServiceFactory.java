@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.zjh.aizerocode.ai.enums.CodeGenTypeEnum;
-import org.zjh.aizerocode.ai.tools.FileWriteTool;
+import org.zjh.aizerocode.ai.tools.ToolManager;
 import org.zjh.aizerocode.exception.BusinessException;
 import org.zjh.aizerocode.exception.ErrorCode;
 import org.zjh.aizerocode.service.ChatHistoryService;
@@ -45,6 +45,9 @@ public class AiCodeGeneratorServiceFactory {
     @Resource
     private ChatHistoryService chatHistoryService;
 
+    @Resource
+    private ToolManager toolManager;
+
     private final Cache<String, AiCodeGeneratorService> serviceCache = Caffeine.newBuilder()
             .maximumSize(1000)
             .expireAfterWrite(Duration.ofMinutes(30))
@@ -73,7 +76,7 @@ public class AiCodeGeneratorServiceFactory {
                     .chatModel(chatModel)
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(new FileWriteTool())
+                    .tools(toolManager.getAllTools())
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                             toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name() + "!"))
                     .build();
